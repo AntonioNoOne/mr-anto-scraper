@@ -950,6 +950,21 @@ class GoogleSearchIntegration:
                     if '€' in text and len(text) > 10 and len(text) < 100:
                         product_elements.append(('span', span))
                         logger.info(f"🔍 DEBUG: Span con prezzo Bing trovato: {text[:50]}")
+                
+                # 4. NUOVO: Cerca elementi con prezzi usando regex
+                logger.info("🔍 DEBUG: === CERCANDO ELEMENTI CON PREZZI REGEX ===")
+                import re
+                price_pattern = r'€\s*\d+[.,]\d+'
+                all_elements = soup.find_all(text=re.compile(price_pattern))
+                logger.info(f"🔍 DEBUG: Trovati {len(all_elements)} elementi con prezzi in €")
+                
+                for i, element in enumerate(all_elements[:20]):
+                    parent = element.parent
+                    if parent:
+                        text = parent.get_text(strip=True)
+                        if len(text) > 20 and len(text) < 300:
+                            product_elements.append(('price_element', parent))
+                            logger.info(f"🔍 DEBUG: Elemento con prezzo {i+1}: {text[:100]}")
 
             logger.info(f"🔍 DEBUG: === TROVATI {len(product_elements)} ELEMENTI POTENZIALI BING ===")
             logger.info(f"🔍 DEBUG: Limite prodotti per sito: {self.max_products_per_site}")
@@ -998,13 +1013,14 @@ class GoogleSearchIntegration:
                                 })
                                 logger.info(f"🔍 DEBUG: Aggiunto risultato link Bing: {title[:50]} -> {url}")
 
-                        elif element_type in ['div', 'span']:
+                        elif element_type in ['div', 'span', 'price_element']:
                             text = element.get_text(strip=True)
 
                             # Cerca prezzo nel testo
                             price_match = re.search(r'€\s*(\d+[.,]\d+)', text)
                             if price_match:
                                 price_text = f"€{price_match.group(1)}"
+                                price_numeric = self._extract_price_from_text(price_text)
 
                                 # Cerca un titolo nel testo (prima del prezzo)
                                 lines = text.split('\n')
@@ -1013,34 +1029,33 @@ class GoogleSearchIntegration:
                                     if '€' not in line and len(line.strip()) > 10:
                                         title = line.strip()
                                         break
-
+                                
                                 if not title:
-                                    title = text[:50]  # Usa i primi 50 caratteri come titolo
-
-                                                                # Miglioramento: cerca un link associato a questo elemento
+                                    title = f"Prodotto {query}"
+                                
+                                # Cerca link prodotto nell'elemento
+                                product_link = element.find('a', href=True)
                                 url = f"https://www.bing.com/shop?q={quote_plus(query)}"
-
-                                # Cerca un link nelle vicinanze
-                                parent = element.parent
-                                if parent:
-                                    nearby_link = parent.find('a', href=True)
-                                    if nearby_link:
-                                        url = nearby_link.get('href')
-                                        if url.startswith('/'):
-                                            url = f"https://www.bing.com{url}"
+                                if product_link:
+                                    href = product_link.get('href', '')
+                                    if href and not href.startswith('javascript:'):
+                                        if href.startswith('/'):
+                                            url = f"https://www.bing.com{href}"
+                                        elif href.startswith('http'):
+                                            url = href
 
                                 results.append({
                                     'name': title,
                                     'price': price_text,
-                                    'price_numeric': self._extract_price_from_text(price_text),
+                                    'price_numeric': price_numeric,
                                     'url': url,
                                     'site': self._extract_site_from_url(url),
                                     'description': f"Risultato Bing per {query}",
                                     'source': 'bing_shopping',
                                     'query': query,
-                                    'validation_score': 0.6
+                                    'validation_score': 0.8 if price_numeric > 0 else 0.6
                                 })
-                                logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} -> {url}")
+                                logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} - {price_text} - {url}")
 
                 except Exception as e:
                     logger.error(f"🔍 DEBUG: Errore estrazione {element_type} Bing: {e}")
@@ -1353,9 +1368,17 @@ class GoogleSearchIntegration:
             logger.info(f"🦆 DEBUG: === CONVERSIONE PREZZO NUMERICO ===")
             logger.info(f"🦆 DEBUG: Prezzo input: '{price_text}'")
             
-            # Rimuovi simboli di valuta e spazi
-            price_clean = re.sub(r'[€$£\s]', '', str(price_text))
-            logger.info(f"🦆 DEBUG: Dopo rimozione simboli: '{price_clean}'")
+            # Cerca pattern di prezzo con regex
+            import re
+            price_pattern = r'€\s*(\d+[.,]\d+)'
+            match = re.search(price_pattern, str(price_text))
+            if match:
+                price_clean = match.group(1)
+                logger.info(f"🦆 DEBUG: Prezzo estratto con regex: '{price_clean}'")
+            else:
+                # Fallback: rimuovi simboli di valuta e spazi
+                price_clean = re.sub(r'[€$£\s]', '', str(price_text))
+                logger.info(f"🦆 DEBUG: Dopo rimozione simboli: '{price_clean}'")
             
             # Gestisci virgole e punti decimali (formato italiano)
             if ',' in price_clean and '.' in price_clean:
