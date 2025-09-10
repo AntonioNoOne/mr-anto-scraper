@@ -21,6 +21,9 @@ COPY . .
 # Esponi la porta
 EXPOSE 8000
 
-# Comando di avvio
+# Inizializza selettori predefiniti
 WORKDIR /app/Backend
+RUN python init_selectors.py
+
+# Comando di avvio
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
