@@ -314,6 +314,8 @@ class FastAIExtractor:
                 if os.environ.get('RENDER'):
                     headless = True
                     print(f"🌐 RENDER FINAL FIX: Forzo headless=True dopo tutte le logiche")
+                    # Su Render, disabilita completamente browser visibili
+                    needs_visible_browser = False
                 
                 # Usa il proxy dalla configurazione personalizzata, dal parametro o carica uno nuovo
                 if browser_config and 'proxy' in browser_config and browser_config['proxy']:
