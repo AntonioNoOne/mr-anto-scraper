@@ -973,7 +973,16 @@ class GoogleSearchIntegration:
             elements_to_process = min(len(product_elements), self.max_products_per_site)
             logger.info(f"🔍 DEBUG: Processando {elements_to_process} elementi su {len(product_elements)} trovati")
             
-            for element_type, element in product_elements[:self.max_products_per_site]:  # Limita risultati
+            # PRIORITÀ: Processa prima elementi con prezzi, poi link
+            elements_with_prices = [e for e in product_elements if e[0] in ['div', 'span', 'price_element']]
+            link_elements = [e for e in product_elements if e[0] == 'link']
+            
+            # Combina: prima elementi con prezzi, poi link
+            prioritized_elements = elements_with_prices + link_elements
+            
+            logger.info(f"🔍 DEBUG: Elementi con prezzi: {len(elements_with_prices)}, Link: {len(link_elements)}")
+            
+            for element_type, element in prioritized_elements[:self.max_products_per_site]:  # Limita risultati
                 try:
                         if element_type == 'link':
                             title = element.get_text(strip=True)
@@ -1031,7 +1040,10 @@ class GoogleSearchIntegration:
                                         break
                                 
                                 if not title:
-                                    title = f"Prodotto {query}"
+                                    # Fallback: usa la prima parte del testo come titolo
+                                    title = text.split('€')[0].strip()[:100]
+                                    if not title:
+                                        title = f"Prodotto {query}"
                                 
                                 # Cerca link prodotto nell'elemento
                                 product_link = element.find('a', href=True)
@@ -1043,19 +1055,23 @@ class GoogleSearchIntegration:
                                             url = f"https://www.bing.com{href}"
                                         elif href.startswith('http'):
                                             url = href
-
-                                results.append({
-                                    'name': title,
-                                    'price': price_text,
-                                    'price_numeric': price_numeric,
-                                    'url': url,
-                                    'site': self._extract_site_from_url(url),
-                                    'description': f"Risultato Bing per {query}",
-                                    'source': 'bing_shopping',
-                                    'query': query,
-                                    'validation_score': 0.8 if price_numeric > 0 else 0.6
-                                })
-                                logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} - {price_text} - {url}")
+                                
+                                # Solo aggiungi se ha un prezzo valido
+                                if price_numeric > 0:
+                                    results.append({
+                                        'name': title,
+                                        'price': price_text,
+                                        'price_numeric': price_numeric,
+                                        'url': url,
+                                        'site': self._extract_site_from_url(url),
+                                        'description': f"Risultato Bing per {query}",
+                                        'source': 'bing_shopping',
+                                        'query': query,
+                                        'validation_score': 0.8 if price_numeric > 0 else 0.6
+                                    })
+                                    logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} - {price_text} - {url}")
+                                else:
+                                    logger.info(f"🔍 DEBUG: Saltato {element_type} Bing: prezzo non valido ({price_text})")
 
                 except Exception as e:
                     logger.error(f"🔍 DEBUG: Errore estrazione {element_type} Bing: {e}")
