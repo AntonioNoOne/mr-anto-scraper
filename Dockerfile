@@ -1,5 +1,5 @@
 # Usa Python 3.11 con Playwright preinstallato
-FROM mcr.microsoft.com/playwright/python:v1.40.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.55.0-jammy
 
 # Imposta la directory di lavoro
 WORKDIR /app
