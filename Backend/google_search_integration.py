@@ -136,7 +136,7 @@ class GoogleSearchIntegration:
         self.production_mode = True  # Cambia a False per sviluppo
         
         # 🚀 RENDER FIX: Forza headless=True su Render
-        self.render_mode = os.environ.get('RENDER', False)
+        self.render_mode = os.environ.get('RENDER', '').lower() == 'true'
         
         logger.info("🔧 Google Search Integration inizializzato")
         logger.info(f"   • Max risultati: {self.max_results}")
