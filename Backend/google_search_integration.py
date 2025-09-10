@@ -124,12 +124,16 @@ class GoogleSearchIntegration:
         self.timeout = 60
         self.last_results = []  # Salva gli ultimi risultati per Chat AI
         
-        # User agents per evitare rilevamento bot
+        # User agents per evitare rilevamento bot (migliorati per Render)
         self.user_agents = [
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0',
+            # User agents più recenti per Render
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         ]
         
         # Configurazione per produzione (browser invisibile ma non headless)
@@ -503,6 +507,20 @@ class GoogleSearchIntegration:
 
                 page = await browser.new_page()
                 
+                # Aggiungi headers anti-detection per Render
+                await page.set_extra_http_headers({
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'it-IT,it;q=0.9,en;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Cache-Control': 'max-age=0'
+                })
+                
                 # Imposta viewport più realistico
                 await page.set_viewport_size({"width": 1366, "height": 768})
                 
@@ -514,7 +532,15 @@ class GoogleSearchIntegration:
                 """)
                 
                 await page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                await page.wait_for_timeout(5000)  # Più tempo per caricare contenuti dinamici
+                
+                # Delay random per simulare comportamento umano su Render
+                if self.render_mode:
+                    delay = random.uniform(5, 8)  # 5-8 secondi su Render per evitare anti-bot
+                    logger.info(f"🦆 DEBUG: Delay anti-bot su Render: {delay:.1f}s")
+                else:
+                    delay = random.uniform(2, 4)  # 2-4 secondi in locale
+                
+                await page.wait_for_timeout(int(delay * 1000))
 
                 # Gestione banner cookie
                 await self._handle_cookie_banners(page)
