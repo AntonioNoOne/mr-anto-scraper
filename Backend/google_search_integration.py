@@ -1025,6 +1025,9 @@ class GoogleSearchIntegration:
                             text = element.get_text(strip=True)
 
                             # Cerca prezzo nel testo (FIX: usa pattern che funziona)
+                            price_text = "Prezzo non disponibile"
+                            price_numeric = 0
+                            
                             # Pattern 1: numero seguito da € (FUNZIONA - 10/10 match)
                             price_match = re.search(r'(\d+[.,]\d+)\s*€', text)
                             if price_match:
@@ -1049,52 +1052,62 @@ class GoogleSearchIntegration:
                                         logger.info(f"🔍 DEBUG: Nessun prezzo trovato in: {text[:100]}")
                                         continue
 
-                                # Cerca un titolo nel testo (prima del prezzo)
-                                # FIX: estrai titolo prima del pattern "numero €"
-                                title = ""
-                                
-                                # Cerca titolo prima del prezzo usando il pattern corretto
-                                price_pattern = r'(\d+[.,]\d+)\s*€'
-                                price_match = re.search(price_pattern, text)
-                                if price_match:
-                                    # Estrai tutto prima del prezzo
-                                    title_part = text[:price_match.start()].strip()
-                                    if title_part and len(title_part) > 10:
-                                        title = title_part
-                                
-                                # Fallback: cerca per righe
+                            # Cerca un titolo nel testo (prima del prezzo)
+                            # FIX: estrai titolo prima del pattern "numero €"
+                            title = ""
+                            
+                            # Cerca titolo prima del prezzo usando il pattern corretto
+                            price_pattern = r'(\d+[.,]\d+)\s*€'
+                            price_match = re.search(price_pattern, text)
+                            if price_match:
+                                # Estrai tutto prima del prezzo
+                                title_part = text[:price_match.start()].strip()
+                                if title_part and len(title_part) > 10:
+                                    title = title_part
+                            
+                            # Fallback: cerca per righe
+                            if not title:
+                                lines = text.split('\n')
+                                for line in lines:
+                                    if '€' not in line and len(line.strip()) > 10:
+                                        title = line.strip()
+                                        break
+                            
+                            # Fallback finale: usa la prima parte del testo
+                            if not title:
+                                title = text.split('€')[0].strip()[:100]
                                 if not title:
-                                    lines = text.split('\n')
-                                    for line in lines:
-                                        if '€' not in line and len(line.strip()) > 10:
-                                            title = line.strip()
-                                            break
+                                    title = f"Prodotto {query}"
+                            
+                            # Pulizia titolo per rimuovere caratteri indesiderati
+                            title = re.sub(r'[^\w\s\-\(\)\[\]\.]', ' ', title)
+                            title = re.sub(r'\s+', ' ', title).strip()
+                            if len(title) > 100:
+                                title = title[:100] + "..."
+                            
+                            # Cerca link prodotto nell'elemento
+                            product_link = element.find('a', href=True)
+                            url = f"https://www.bing.com/shop?q={quote_plus(query)}"
+                            if product_link:
+                                href = product_link.get('href', '')
+                                if href and not href.startswith('javascript:'):
+                                    if href.startswith('/'):
+                                        url = f"https://www.bing.com{href}"
+                                    elif href.startswith('http'):
+                                        url = href
+                            
+                            # Solo aggiungi se ha un prezzo valido
+                            if price_numeric > 0:
+                                # Controlla duplicati prima di aggiungere
+                                is_duplicate = False
+                                for existing in results:
+                                    if (existing['name'].lower() == title.lower() and 
+                                        abs(existing['price_numeric'] - price_numeric) < 0.01):
+                                        is_duplicate = True
+                                        logger.info(f"🔍 DEBUG: Duplicato saltato: {title}")
+                                        break
                                 
-                                # Fallback finale: usa la prima parte del testo
-                                if not title:
-                                    title = text.split('€')[0].strip()[:100]
-                                    if not title:
-                                        title = f"Prodotto {query}"
-                                
-                                # Pulizia titolo per rimuovere caratteri indesiderati
-                                title = re.sub(r'[^\w\s\-\(\)\[\]\.]', ' ', title)
-                                title = re.sub(r'\s+', ' ', title).strip()
-                                if len(title) > 100:
-                                    title = title[:100] + "..."
-                                
-                                # Cerca link prodotto nell'elemento
-                                product_link = element.find('a', href=True)
-                                url = f"https://www.bing.com/shop?q={quote_plus(query)}"
-                                if product_link:
-                                    href = product_link.get('href', '')
-                                    if href and not href.startswith('javascript:'):
-                                        if href.startswith('/'):
-                                            url = f"https://www.bing.com{href}"
-                                        elif href.startswith('http'):
-                                            url = href
-                                
-                                # Solo aggiungi se ha un prezzo valido
-                                if price_numeric > 0:
+                                if not is_duplicate:
                                     results.append({
                                         'name': title,
                                         'price': price_text,
@@ -1104,11 +1117,11 @@ class GoogleSearchIntegration:
                                         'description': f"Risultato Bing per {query}",
                                         'source': 'bing_shopping',
                                         'query': query,
-                                        'validation_score': 0.8 if price_numeric > 0 else 0.6
-                                    })
-                                    logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} - {price_text} - {url}")
-                                else:
-                                    logger.info(f"🔍 DEBUG: Saltato {element_type} Bing: prezzo non valido ({price_text})")
+                                    'validation_score': 0.8 if price_numeric > 0 else 0.6
+                                })
+                                logger.info(f"🔍 DEBUG: Aggiunto risultato {element_type} Bing: {title[:50]} - {price_text} - {url}")
+                            else:
+                                logger.info(f"🔍 DEBUG: Saltato {element_type} Bing: prezzo non valido ({price_text})")
 
                 except Exception as e:
                     logger.error(f"🔍 DEBUG: Errore estrazione {element_type} Bing: {e}")
