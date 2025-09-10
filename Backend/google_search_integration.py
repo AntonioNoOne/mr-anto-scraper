@@ -1025,21 +1025,22 @@ class GoogleSearchIntegration:
                         elif element_type in ['div', 'span', 'price_element']:
                             text = element.get_text(strip=True)
 
-                            # Cerca prezzo nel testo (migliorato)
-                            price_match = re.search(r'€\s*(\d+[.,]\d+)', text)
+                            # Cerca prezzo nel testo (FIX: usa pattern che funziona)
+                            # Pattern 1: numero seguito da € (FUNZIONA - 10/10 match)
+                            price_match = re.search(r'(\d+[.,]\d+)\s*€', text)
                             if price_match:
                                 price_text = f"€{price_match.group(1)}"
                                 price_numeric = self._extract_price_from_text(price_text)
                                 logger.info(f"🔍 DEBUG: Prezzo estratto: {price_text} -> {price_numeric}")
                             else:
-                                # Fallback: cerca pattern più generico
-                                price_match = re.search(r'(\d+[.,]\d+)\s*€', text)
+                                # Pattern 2: € seguito da numero (fallback)
+                                price_match = re.search(r'€\s*(\d+[.,]\d+)', text)
                                 if price_match:
                                     price_text = f"€{price_match.group(1)}"
                                     price_numeric = self._extract_price_from_text(price_text)
                                     logger.info(f"🔍 DEBUG: Prezzo fallback: {price_text} -> {price_numeric}")
                                 else:
-                                    # Fallback finale: cerca numeri con virgole/punti
+                                    # Pattern 3: numeri con virgole/punti (fallback finale)
                                     price_match = re.search(r'(\d{1,3}[.,]\d{2})', text)
                                     if price_match:
                                         price_text = f"€{price_match.group(1)}"
@@ -1050,15 +1051,28 @@ class GoogleSearchIntegration:
                                         continue
 
                                 # Cerca un titolo nel testo (prima del prezzo)
-                                lines = text.split('\n')
+                                # FIX: estrai titolo prima del pattern "numero €"
                                 title = ""
-                                for line in lines:
-                                    if '€' not in line and len(line.strip()) > 10:
-                                        title = line.strip()
-                                        break
                                 
+                                # Cerca titolo prima del prezzo usando il pattern corretto
+                                price_pattern = r'(\d+[.,]\d+)\s*€'
+                                price_match = re.search(price_pattern, text)
+                                if price_match:
+                                    # Estrai tutto prima del prezzo
+                                    title_part = text[:price_match.start()].strip()
+                                    if title_part and len(title_part) > 10:
+                                        title = title_part
+                                
+                                # Fallback: cerca per righe
                                 if not title:
-                                    # Fallback: usa la prima parte del testo come titolo
+                                    lines = text.split('\n')
+                                    for line in lines:
+                                        if '€' not in line and len(line.strip()) > 10:
+                                            title = line.strip()
+                                            break
+                                
+                                # Fallback finale: usa la prima parte del testo
+                                if not title:
                                     title = text.split('€')[0].strip()[:100]
                                     if not title:
                                         title = f"Prodotto {query}"
