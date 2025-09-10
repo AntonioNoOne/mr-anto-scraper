@@ -805,6 +805,7 @@ class GoogleSearchIntegration:
     
     async def _try_bing_shopping(self, query: str) -> List[Dict[str, Any]]:
         """Prova Bing Shopping"""
+        results = []  # Inizializza results all'inizio
         try:
             logger.info(f"🔍 Ricerca Bing Shopping: {query}")
 
