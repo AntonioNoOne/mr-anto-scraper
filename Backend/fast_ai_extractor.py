@@ -273,28 +273,33 @@ class FastAIExtractor:
             async with async_playwright() as p:
                 browser = None
                 
-                # Determina la modalità browser in base alla configurazione
-                if browser_config and 'mode' in browser_config:
-                    mode = browser_config['mode']
-                    if mode == 'visible':
-                        headless = False
-                    elif mode == 'stealth':
-                        headless = False
-                    elif mode == 'normal':
-                        headless = True
+                # 🚀 RENDER FIX: Forza headless=True su Render per evitare errori browser
+                if os.environ.get('RENDER'):
+                    headless = True
+                    print(f"🌐 RENDER DETECTED: Forzo headless=True")
                 else:
-                    # Fallback alla logica automatica basata sul sito
-                    needs_stealth_mode = any(site in url.lower() for site in ANTI_BOT_SITES)
-                    
-                    if needs_stealth_mode:
-                        headless = False
+                    # Determina la modalità browser in base alla configurazione
+                    if browser_config and 'mode' in browser_config:
+                        mode = browser_config['mode']
+                        if mode == 'visible':
+                            headless = False
+                        elif mode == 'stealth':
+                            headless = False
+                        elif mode == 'normal':
+                            headless = True
                     else:
-                        headless = True
-                
-                # 🚨 CORREZIONE CRITICA: Se serve browser visibile, forza headless=False
-                if needs_visible_browser:
-                    headless = False
-                    print(f"🖥️ FORZO BROWSER VISIBILE: headless={headless}")
+                        # Fallback alla logica automatica basata sul sito
+                        needs_stealth_mode = any(site in url.lower() for site in ANTI_BOT_SITES)
+                        
+                        if needs_stealth_mode:
+                            headless = False
+                        else:
+                            headless = True
+                    
+                    # 🚨 CORREZIONE CRITICA: Se serve browser visibile, forza headless=False
+                    if needs_visible_browser:
+                        headless = False
+                        print(f"🖥️ FORZO BROWSER VISIBILE: headless={headless}")
                 
                 # Rilevamento speciale per siti con anti-bot molto forte
                 is_strong_anti_bot = any(site in url.lower() for site in STRONG_ANTI_BOT_SITES)
