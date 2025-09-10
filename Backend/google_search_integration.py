@@ -898,8 +898,6 @@ class GoogleSearchIntegration:
                 logger.info(f"🔍 DEBUG: HTML Bing estratto, lunghezza: {len(html_content)} caratteri")
                 soup = BeautifulSoup(html_content, 'html.parser')
 
-                results = []
-
                 # DEBUG: Log della struttura HTML per capire cosa c'è
                 logger.info(f"🔍 DEBUG: Analizzando HTML Bing...")
 
