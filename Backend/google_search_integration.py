@@ -98,6 +98,7 @@ import urllib
 from urllib.parse import quote_plus, urlparse
 import random
 import base64
+import os
 
 # Import Playwright per browser automation
 from playwright.async_api import async_playwright
@@ -133,6 +134,9 @@ class GoogleSearchIntegration:
         
         # Configurazione per produzione (browser invisibile ma non headless)
         self.production_mode = True  # Cambia a False per sviluppo
+        
+        # 🚀 RENDER FIX: Forza headless=True su Render
+        self.render_mode = os.environ.get('RENDER', False)
         
         logger.info("🔧 Google Search Integration inizializzato")
         logger.info(f"   • Max risultati: {self.max_results}")
@@ -456,7 +460,7 @@ class GoogleSearchIntegration:
                 if self.production_mode:
                     # Modalità produzione: browser invisibile ma non headless
                     browser = await p.chromium.launch(
-                        headless=False,  # Non headless per evitare detection
+                        headless=self.render_mode,  # Headless su Render, visibile in produzione normale
                         args=[
                             '--no-sandbox',
                             '--disable-blink-features=AutomationControlled',
@@ -790,7 +794,7 @@ class GoogleSearchIntegration:
                 if self.production_mode:
                     # Modalità produzione: browser invisibile ma non headless
                     browser = await p.chromium.launch(
-                        headless=False,  # Non headless per evitare detection
+                        headless=self.render_mode,  # Headless su Render, visibile in produzione normale
                         args=[
                             '--no-sandbox',
                             '--disable-blink-features=AutomationControlled',
@@ -1071,7 +1075,7 @@ class GoogleSearchIntegration:
                 if self.production_mode:
                     # Modalità produzione: browser invisibile ma non headless
                     browser = await p.chromium.launch(
-                        headless=False,  # Non headless per evitare detection
+                        headless=self.render_mode,  # Headless su Render, visibile in produzione normale
                         args=[
                             '--no-sandbox',
                             '--disable-blink-features=AutomationControlled',
