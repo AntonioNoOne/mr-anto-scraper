@@ -1025,11 +1025,29 @@ class GoogleSearchIntegration:
                         elif element_type in ['div', 'span', 'price_element']:
                             text = element.get_text(strip=True)
 
-                            # Cerca prezzo nel testo
+                            # Cerca prezzo nel testo (migliorato)
                             price_match = re.search(r'€\s*(\d+[.,]\d+)', text)
                             if price_match:
                                 price_text = f"€{price_match.group(1)}"
                                 price_numeric = self._extract_price_from_text(price_text)
+                                logger.info(f"🔍 DEBUG: Prezzo estratto: {price_text} -> {price_numeric}")
+                            else:
+                                # Fallback: cerca pattern più generico
+                                price_match = re.search(r'(\d+[.,]\d+)\s*€', text)
+                                if price_match:
+                                    price_text = f"€{price_match.group(1)}"
+                                    price_numeric = self._extract_price_from_text(price_text)
+                                    logger.info(f"🔍 DEBUG: Prezzo fallback: {price_text} -> {price_numeric}")
+                                else:
+                                    # Fallback finale: cerca numeri con virgole/punti
+                                    price_match = re.search(r'(\d{1,3}[.,]\d{2})', text)
+                                    if price_match:
+                                        price_text = f"€{price_match.group(1)}"
+                                        price_numeric = self._extract_price_from_text(price_text)
+                                        logger.info(f"🔍 DEBUG: Prezzo finale: {price_text} -> {price_numeric}")
+                                    else:
+                                        logger.info(f"🔍 DEBUG: Nessun prezzo trovato in: {text[:100]}")
+                                        continue
 
                                 # Cerca un titolo nel testo (prima del prezzo)
                                 lines = text.split('\n')
@@ -1044,6 +1062,12 @@ class GoogleSearchIntegration:
                                     title = text.split('€')[0].strip()[:100]
                                     if not title:
                                         title = f"Prodotto {query}"
+                                
+                                # Pulizia titolo per rimuovere caratteri indesiderati
+                                title = re.sub(r'[^\w\s\-\(\)\[\]\.]', ' ', title)
+                                title = re.sub(r'\s+', ' ', title).strip()
+                                if len(title) > 100:
+                                    title = title[:100] + "..."
                                 
                                 # Cerca link prodotto nell'elemento
                                 product_link = element.find('a', href=True)
