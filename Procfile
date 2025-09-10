@@ -1,0 +1,1 @@
+web: cd Backend && python -m playwright install && uvicorn mr_anto_scraper:app --host 0.0.0.0 --port $PORT 

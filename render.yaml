@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: mr-anto-scraper
+    env: python
+    plan: free
+    buildCommand: "cd Backend && pip install -r requirements.txt && playwright install"
+    startCommand: "cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: BROWSERBASE_API_KEY
+        sync: false
+      - key: BROWSERBASE_PROJECT_ID
+        sync: false

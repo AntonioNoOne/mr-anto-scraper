@@ -1,0 +1,3176 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jusper - AI Scraper Dashboard (Modulare)</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css?v=1" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="app" class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="sidebar w-64 flex flex-col">
+            <!-- Logo & Title -->
+            <div class="p-4 pb-6">
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-600 via-gray-500 to-gray-700 p-0.5 shadow-xl">
+                            <div class="w-full h-full rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative overflow-hidden">
+                                <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 animate-pulse"></div>
+                                <div class="relative z-10 flex items-center justify-center">
+                                    <div class="text-white font-black text-xl tracking-tighter">
+                                        <span class="text-gray-300 drop-shadow-lg">J</span>
+                                        <span class="text-white drop-shadow-lg">S</span>
+                                    </div>
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-ping"></div>
+                                    <div class="absolute -top-1 -right-1 w-2 h-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-black tracking-tight">
+                            <span class="bg-gradient-to-r from-gray-200 via-white to-gray-300 bg-clip-text text-transparent">
+                                Jusper
+                            </span>
+                        </h1>
+                        <p class="text-xs text-gray-400 font-medium tracking-wide uppercase">
+                            AI-Powered Scraper
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 py-2">
+                <div class="nav-item" :class="{ active: activeSection === 'dashboard' }" @click="setActiveSection('dashboard')">
+                    <i class="fas fa-chart-pie w-5"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" :class="{ active: activeSection === 'scraping' }" @click="setActiveSection('scraping')">
+                    <i class="fas fa-globe w-5"></i>
+                    <span>Scraping Generico</span>
+                </div>
+                <div class="nav-item" :class="{ active: activeSection === 'comparison' }" @click="setActiveSection('comparison')">
+                    <i class="fas fa-balance-scale w-5"></i>
+                    <span>Confronto Prodotti</span>
+                </div>
+                <div class="nav-item" :class="{ active: activeSection === 'google-search' }" @click="setActiveSection('google-search')">
+                    <i class="fab fa-google w-5"></i>
+                    <span>Google Search</span>
+                </div>
+                <div class="nav-item" :class="{ active: activeSection === 'scheduling' }" @click="setActiveSection('scheduling')">
+                    <i class="fas fa-clock w-5"></i>
+                    <span>Scheduling</span>
+                </div>
+                <div class="nav-item" :class="{ active: activeSection === 'system-config' }" @click="setActiveSection('system-config')">
+                    <i class="fas fa-cog w-5"></i>
+                    <span>Configurazione</span>
+                </div>
+            </nav>
+
+            <!-- Status -->
+            <div class="p-4">
+                <div class="flex items-center space-x-3 text-sm">
+                    <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    <span class="text-gray-400">Sistema Operativo</span>
+                        </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    Ultimo aggiornamento: {{ lastUpdate }}
+                            </div>
+                        </div>
+                    </div>
+
+        <!-- Main Content Area -->
+            <div class="main-content flex-1">
+                <!-- Header Bar -->
+                <header class="bg-black border-b border-gray-800 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold">{{ getSectionTitle() }}</h2>
+                            <p class="text-sm text-gray-400">{{ getSectionDescription() }}</p>
+                            </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="p-2 text-gray-400 hover:text-white transition-colors">
+                                <i class="fas fa-bell"></i>
+                                </button>
+                            <button class="p-2 text-gray-400 hover:text-white transition-colors">
+                                <i class="fas fa-user-circle text-lg"></i>
+                                </button>
+                            </div>
+                        </div>
+                </header>
+
+                <!-- Content Area -->
+                <div class="p-6 flex-1 overflow-y-auto">
+                <!-- Dashboard Section -->
+                <div v-if="activeSection === 'dashboard'" class="fade-in content-section" @click="forceDashboardUpdate">
+                    <div class="stats-grid mb-8">
+                        <div class="metric-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Prodotti Analizzati</h3>
+                                <i class="fas fa-chart-line text-green-400"></i>
+                            </div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.totalProducts || 0 }}</div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-green-400">+{{ stats.newProductsToday || 0 }}</span>
+                <!-- DEBUG: {{ stats.newProductsToday || 'UNDEFINED' }} -->
+                                <span class="text-gray-400 ml-1">oggi</span>
+                            </div>
+                            <div class="mt-3 bg-gray-700 rounded-full h-2">
+                                <div class="progress-bar" :style="{ width: Math.min((stats.totalProducts / 1000 * 100), 100) + '%' }"></div>
+                            </div>
+                        </div>
+
+                        <div class="metric-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Precisione AI</h3>
+                                <i class="fas fa-brain text-blue-400"></i>
+                                </div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.aiAccuracy || 0 }}%</div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-blue-400">{{ stats.aiModel || 'GPT-4' }}</span>
+                                <span class="text-gray-400 ml-1">model</span>
+                                    </div>
+                            <div class="mt-3 bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" 
+                                     :style="{ width: (stats.aiAccuracy || 0) + '%' }"></div>
+                                </div>
+                            </div>
+
+                        <div class="metric-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Siti Monitorati</h3>
+                                <i class="fas fa-globe text-purple-400"></i>
+                        </div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.sitesMonitored || 0 }}</div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-purple-400">{{ stats.activeSites || 0 }}</span>
+                                <span class="text-gray-400 ml-1">attivi</span>
+                    </div>
+                            <div class="mt-3 bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
+                                     :style="{ width: (stats.activeSites / stats.sitesMonitored * 100) + '%' }"></div>
+                </div>
+            </div>
+
+                        <div class="metric-card">
+                            <div class="flex items-center justify-between mb-3">
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Performance</h3>
+                                <i class="fas fa-tachometer-alt text-orange-400"></i>
+                                </div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.avgResponseTime || 0 }}ms</div>
+                            <div class="flex items-center text-sm">
+                                <span class="text-orange-400">{{ stats.uptime || 0 }}%</span>
+                                <span class="text-gray-400 ml-1">uptime</span>
+                            </div>
+                            <div class="mt-3 bg-gray-700 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" 
+                                     :style="{ width: (100 - stats.avgResponseTime / 10) + '%' }"></div>
+                    </div>
+                </div>
+
+
+                        </div>
+                        
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                        <!-- Activity Chart -->
+                        <div class="chart-container">
+                            <h3 class="text-lg font-semibold mb-4">Attività Recente</h3>
+                            <div class="chart-wrapper" style="height: 250px; width: 100%; position: relative;">
+                                <canvas id="activityChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Performance per Sito Chart -->
+                        <div class="chart-container">
+                            <h3 class="text-lg font-semibold mb-4">Performance per Sito (Ultimi 7 giorni)</h3>
+                            <div class="chart-wrapper" style="height: 300px; width: 100%; position: relative;">
+                                <canvas id="priceChart"></canvas>
+                            </div>
+                        </div>
+                </div>
+
+                    <!-- Recent Activity -->
+                    <div class="glass-card p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold">Attività Recente</h3>
+                            <button @click="resetDailyStats" class="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded-md text-gray-300 transition-colors">
+                                Reset Giornaliero
+                            </button>
+                        </div>
+                        <div class="space-y-3">
+                            <div v-for="activity in recentActivities" :key="activity.id" 
+                                 class="flex items-center space-x-4 p-3 rounded-lg bg-gray-800 bg-opacity-50">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center" 
+                                     :class="activity.type === 'scrape' ? 'bg-blue-500' : 
+                                            activity.type === 'analysis' ? 'bg-green-500' : 
+                                            activity.type === 'update' ? 'bg-orange-500' : 'bg-purple-500'">
+                                    <i :class="activity.icon" class="text-xs text-white"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium">{{ activity.description }}</p>
+                                    <div class="flex items-center space-x-2 mt-1">
+                                        <span class="text-xs text-gray-400">{{ activity.timestamp }}</span>
+                                        <span v-if="activity.duration" class="text-xs text-blue-400">
+                                            <i class="fas fa-clock mr-1"></i>{{ activity.duration }}
+                                        </span>
+                                        <span v-if="activity.productsFound > 0" class="text-xs text-green-400">
+                                            <i class="fas fa-box mr-1"></i>{{ activity.productsFound }} prodotti
+                                        </span>
+                                    </div>
+                                    <div v-if="activity.additionalInfo && activity.additionalInfo.length > 0" 
+                                         class="mt-2 text-xs text-gray-500">
+                                        <div v-for="info in activity.additionalInfo" :key="info" 
+                                             class="inline-block bg-gray-700 px-2 py-1 rounded mr-2 mb-1">
+                                            {{ info }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="status-badge" :class="'status-' + activity.status">
+                                    {{ activity.status }}
+                                </div>
+                            </div>
+                    </div>
+                </div>
+                            </div>
+
+                <!-- Scraping Section -->
+                <div v-if="activeSection === 'scraping'" class="fade-in content-section">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4">Scraping Generico - Sistema AI Ottimizzato</h3>
+                        
+                        <!-- Input URLs multipli -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-400 mb-2">URL da Analizzare</label>
+                                <div class="space-y-2">
+                                    <div v-for="(url, index) in store.state.genericUrls" :key="index" class="flex space-x-2">
+                                        <input :value="store.state.genericUrls[index]" 
+                                               @input="updateScrapingUrl(index, $event.target.value)"
+                                               type="url" 
+                                               class="input-modern flex-1" 
+                                               :placeholder="'URL ' + (index + 1) + ': https://esempio.com/prodotti'">
+                                        <button @click="clearUrl(index)" 
+                                                class="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white">
+                                            <i class="fas fa-eraser"></i>
+                                        </button>
+                                        <button v-if="scrapingUrls.length > 1" @click="removeUrl(index)" 
+                                                class="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    <div class="flex space-x-2">
+                                        <button @click="addUrl" class="btn-secondary flex-1">
+                                            <i class="fas fa-plus mr-2"></i>Aggiungi URL
+                                        </button>
+                                        <button @click="startGenericScraping" :disabled="store.state.isScrapingGeneric" class="btn-primary flex-1">
+                            <span v-if="store.state.isScrapingGeneric">Scraping in corso...</span>
+                            <span v-else>Avvia Scraping</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Pulsante Stop separato sotto - Più piccolo -->
+                                    <div class="mt-3" v-if="store.state.isScrapingGeneric">
+                                        <button @click="stopGenericScraping" class="btn-danger btn-stop-compact">
+                                            <i class="fas fa-stop mr-1"></i>Stop
+                                        </button>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress per ogni URL -->
+                        <div v-if="genericScrapingProgress.length > 0" class="space-y-4 mt-6">
+                                <h4 class="text-md font-semibold">Progresso Scraping</h4>
+                                <div v-for="(progress, index) in genericScrapingProgress" :key="index" 
+                                     class="bg-gray-800 rounded-lg p-4">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="text-sm font-medium truncate">{{ progress.url }}</span>
+                                        <div class="flex items-center space-x-2">
+                                            <span v-if="progress.status === 'processing'" class="text-xs text-blue-300">
+                                                <i class="fas fa-cog fa-spin mr-1"></i>Elaborazione...
+                                            </span>
+                                            <span class="text-xs px-2 py-1 rounded-full" 
+                                                  :class="progress.status === 'completed' ? 'bg-green-600' : 
+                                                         progress.status === 'error' ? 'bg-red-600' : 'bg-blue-600'">
+                                                {{ progress.status }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Barra di progresso semplificata -->
+                                    <div class="w-full bg-gray-700 rounded-full h-3 relative overflow-hidden mb-2">
+                                        <div class="h-3 rounded-full transition-all duration-500 ease-out relative" 
+                                             :class="progress.status === 'completed' ? 'bg-green-500' : 
+                                                    progress.status === 'error' ? 'bg-red-500' : 'bg-blue-500'"
+                                             :style="{ width: Math.round(progress.percentage) + '%' }">
+                                        </div>
+                                        
+                                        <!-- Effetto shimmer per progresso attivo -->
+                                        <div v-if="progress.status === 'processing' && progress.percentage < 100" 
+                                             class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"
+                                             :style="{ left: Math.round(progress.percentage) + '%' }"></div>
+                                    </div>
+                                    
+                                    <!-- Messaggio di stato unificato -->
+                                    <div v-if="progress.status === 'processing'" class="mt-2 text-center">
+                                        <div class="text-xs text-blue-300 animate-pulse">
+                                            <i class="fas fa-spinner fa-spin mr-1"></i>
+                                            {{ progress.message || 'Elaborazione in corso...' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                    </div>
+                    
+                    <!-- Risultati Scraping Generico -->
+                    <div v-if="store.state.genericResults.length > 0" class="mt-8">
+                                                                                        <h4 class="text-lg font-semibold mb-4"><i class="fas fa-sitemap text-gray-400 mr-2"></i>Risultati per Sito</h4>
+                        <div class="space-y-6">
+                            <div v-for="(result, index) in store.state.genericResults" :key="index" 
+                                 class="bg-gray-800 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex-1 min-w-0">
+                                        <h5 class="font-semibold">{{ api.getSiteName(result.url) }}</h5>
+                                        <p class="text-xs text-gray-400 break-all" :title="result.url">{{ truncateUrl(result.url) }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="text-lg font-bold text-green-400">{{ result.products?.length || 0 }}</span>
+                                        <p class="text-xs text-gray-400">prodotti</p>
+                                    </div>
+                                </div>
+                                
+                                <!-- Tabella prodotti per sito -->
+                                <div v-if="result.success && result.products && result.products.length > 0" class="data-table">
+                                    <table class="w-full">
+                                        <thead>
+                                            <tr>
+                                                <th>Prodotto</th>
+                                                <th>Prezzo</th>
+                                                <th>Indirizzo/Marca</th>
+                                                <th>Caratteristiche</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="product in result.products" :key="product.name">
+                                                <td>
+                                                    <p class="font-medium">{{ product.name }}</p>
+                                                </td>
+                                                <td class="font-semibold text-green-400">{{ product.price }}</td>
+                                                <td class="text-sm">{{ product.address || product.brand || 'N/A' }}</td>
+                                                <td class="text-xs text-gray-400">
+                                                    <div class="space-y-1">
+                                                        <!-- Caratteristiche generiche per qualsiasi tipo di prodotto -->
+                                                        <div v-if="product.sqm" class="flex items-center">
+                                                            <i class="fas fa-ruler-combined mr-1"></i>
+                                                            <span>{{ product.sqm }}</span>
+                                                        </div>
+                                                        <div v-if="product.rooms" class="flex items-center">
+                                                            <i class="fas fa-door-open mr-1"></i>
+                                                            <span>{{ product.rooms }}</span>
+                                                        </div>
+                                                        <div v-if="product.bathrooms" class="flex items-center">
+                                                            <i class="fas fa-bath mr-1"></i>
+                                                            <span>{{ product.bathrooms }}</span>
+                                                        </div>
+                                                        <div v-if="product.brand" class="flex items-center">
+                                                            <i class="fas fa-tag mr-1"></i>
+                                                            <span>{{ product.brand }}</span>
+                                                        </div>
+                                                        <div v-if="product.model" class="flex items-center">
+                                                            <i class="fas fa-microchip mr-1"></i>
+                                                            <span>{{ product.model }}</span>
+                                                        </div>
+                                                        <div v-if="product.weight" class="flex items-center">
+                                                            <i class="fas fa-weight-hanging mr-1"></i>
+                                                            <span>{{ product.weight }}</span>
+                                                        </div>
+                                                        <div v-if="product.price_per_kg && product.price_per_kg !== '0,00€'" class="flex items-center">
+                                                            <i class="fas fa-euro-sign mr-1"></i>
+                                                            <span>{{ product.price_per_kg }}</span>
+                                                        </div>
+                                                        <div v-if="product.rating" class="flex items-center">
+                                                            <i class="fas fa-star mr-1"></i>
+                                                            <span>{{ product.rating }}</span>
+                                                        </div>
+                                                        <div v-if="product.description" class="flex items-center">
+                                                            <i class="fas fa-info-circle mr-1"></i>
+                                                            <span class="truncate max-w-xs">{{ product.description }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <!-- Versione compatta per mobile -->
+                                                    <div class="hidden sm:block mt-1 text-xs text-gray-500">
+                                                        {{ formatProductDetails(product) }}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Azioni -->
+                                <div class="flex space-x-2 mt-4">
+                                    <button v-if="result.success" 
+                                            @click="selectAllProductsFromResult(result)"
+                                            class="btn-secondary text-xs">
+                                        <i class="fas fa-check-double mr-1"></i>Seleziona per Monitoring
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Azioni Globali -->
+                        <div class="mt-6 flex space-x-3">
+                            <button @click="clearScrapingResults" class="btn-secondary">
+                                <i class="fas fa-trash mr-2"></i>Pulisci Risultati
+                            </button>
+                            <button @click="clearScrapedUrls" class="btn-secondary">
+                                <i class="fas fa-link-slash mr-2"></i>Pulisci URL
+                            </button>
+                            <button v-if="store.state.genericResults.length > 1" 
+                                    @click="setActiveSection('comparison')" 
+                                    class="btn-primary">
+                                <i class="fas fa-balance-scale mr-2"></i>Confronta Prodotti
+                            </button>
+                            <button v-if="store.state.genericResults.length > 0" 
+                                    @click="setActiveSection('scheduling')" 
+                                    class="btn-primary">
+                                <i class="fas fa-clock mr-2"></i>Monitora Prezzi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Section -->
+                <div v-if="activeSection === 'comparison'" class="fade-in content-section">
+                    <div class="glass-card p-6">
+                                                    <h3 class="text-lg font-semibold mb-4"><i class="fas fa-balance-scale text-gray-400 mr-2"></i>Confronto Prodotti - Trova i Migliori Deal</h3>
+                        
+                        <!-- Database Products List -->
+                        <div class="mb-8">
+                            <div class="mb-4">
+                                <h4 class="text-lg font-semibold"><i class="fas fa-database text-gray-400 mr-2"></i>Prodotti nel Database</h4>
+                            </div>
+                            
+                            <!-- Controlli PRIMA della lista -->
+                            <div class="bg-gray-800 rounded-lg p-4 mb-6">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                                    <!-- Carica Prodotti -->
+                                    <div class="text-center md:text-left">
+                                        <button @click="loadAllProducts" :disabled="store.state.isLoadingDbProducts"
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors">
+                                            <span v-if="store.state.isLoadingDbProducts">Caricamento...</span>
+                                            <span v-else><i class="fas fa-database mr-2"></i>Carica Prodotti</span>
+                                    </button>
+                                </div>
+                                    
+
+                                    
+                                    <!-- Spazio per bilanciamento layout -->
+                                    <div class="text-center md:text-right">
+                                        <div class="text-sm text-gray-400">
+                                            Sistema di confronto integrato sopra
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Statistiche e Risultati Confronto SOPRA la lista -->
+                            <div v-if="store.state.databaseProducts && store.state.databaseProducts.length > 0" class="mb-6">
+                                
+                                <!-- 🆕 STATISTICHE RIASSUNTIVE CONFRONTO -->
+                                <div v-if="store.state.comparisonResults && store.state.comparisonResults.summary_stats" 
+                                     class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg p-6 mb-6 text-white">
+                                    <h4 class="text-2xl font-bold mb-4 text-center">📊 Risultati Confronto</h4>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                                        <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                                            <div class="text-3xl font-bold">{{ store.state.comparisonResults.summary_stats.total_groups }}</div>
+                                            <div class="text-sm opacity-90">Gruppi Trovati</div>
+                                        </div>
+                                        <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                                            <div class="text-3xl font-bold">{{ store.state.comparisonResults.summary_stats.total_comparable_products }}</div>
+                                            <div class="text-sm opacity-90">Prodotti Confrontabili</div>
+                                        </div>
+                                        <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                                            <div class="text-3xl font-bold">€{{ store.state.comparisonResults.summary_stats.total_savings_opportunity }}</div>
+                                            <div class="text-sm opacity-90">Risparmio Totale</div>
+                                        </div>
+                                        <div class="bg-white bg-opacity-20 rounded-lg p-4">
+                                            <div class="text-3xl font-bold">€{{ store.state.comparisonResults.summary_stats.best_deal?.savings || 0 }}</div>
+                                            <div class="text-sm opacity-90">Miglior Affare</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Miglior Affare Dettagliato -->
+                                    <div v-if="store.state.comparisonResults.summary_stats.best_deal?.savings > 0" 
+                                         class="mt-6 bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                                        <div class="text-lg font-semibold mb-2">🏆 Miglior Affare Trovato</div>
+                                        <div class="text-xl">{{ store.state.comparisonResults.summary_stats.best_deal.product_name }}</div>
+                                        <div class="text-2xl font-bold text-green-300">€{{ store.state.comparisonResults.summary_stats.best_deal.price }}</div>
+                                        <div class="text-sm opacity-90">da {{ store.state.comparisonResults.summary_stats.best_deal.source }}</div>
+                                        <div class="text-lg font-semibold text-green-300">Risparmio: €{{ store.state.comparisonResults.summary_stats.best_deal.savings }}</div>
+                                    </div>
+                                </div>
+                                <!-- Statistiche Database e Controlli Confronto -->
+                                <div class="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-600">
+                                    <h4 class="text-xl font-bold text-white mb-4 text-center">Dashboard Confronto Prodotti</h4>
+                                    
+                                    <!-- Statistiche Principali -->
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                        <div class="text-center p-4 bg-gray-700 rounded-lg border border-gray-600">
+                                            <div class="text-3xl font-bold text-blue-400">{{ store.state.databaseProducts.length }}</div>
+                                            <div class="text-sm text-gray-300 font-medium">Prodotti Totali</div>
+                                </div>
+                                        <div class="text-center p-4 bg-gray-700 rounded-lg border border-gray-600">
+                                            <div class="text-3xl font-bold text-green-400">{{ getUniqueSitesCount() }}</div>
+                                            <div class="text-sm text-gray-300 font-medium">Siti Disponibili</div>
+                                </div>
+                                        <div class="text-center p-4 bg-gray-700 rounded-lg border border-gray-600">
+                                            <div class="text-lg font-bold text-yellow-400">{{ getLastUpdateTime() }}</div>
+                                            <div class="text-sm text-gray-300 font-medium">Ultimo Aggiornamento</div>
+                                </div>
+                                </div>
+                                    
+                                    <!-- Sistema Modalità Confronto Integrato -->
+                                    <div class="bg-gray-700 rounded-lg p-6 border border-gray-600">
+                                        <h5 class="text-lg font-semibold text-white mb-4 text-center">Configurazione Confronto</h5>
+                                        
+                                        <!-- Radio Buttons per Modalità -->
+                                        <div class="flex flex-col md:flex-row gap-4 mb-6 justify-center">
+                                            <label class="flex items-center justify-center cursor-pointer p-4 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors border-2 border-transparent hover:border-blue-500 flex-1 max-w-xs">
+                                                <input type="radio" v-model="comparisonMode" value="all" 
+                                                       class="mr-3 text-blue-500 focus:ring-blue-500">
+                                                <span class="text-white font-medium text-lg">Confronta Tutti i Prodotti</span>
+                                            </label>
+                                            
+                                            <label class="flex items-center justify-center cursor-pointer p-4 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors border-2 border-transparent hover:border-blue-500 flex-1 max-w-xs">
+                                                <input type="radio" v-model="comparisonMode" value="specific" 
+                                                       class="mr-3 text-blue-500 focus:ring-blue-500">
+                                                <span class="text-white font-medium text-lg">Confronta Domini Specifici</span>
+                                            </label>
+                            </div>
+
+                                        <!-- Selezione Domini Specifici (visibile solo in modalità specific) -->
+                                        <div v-if="comparisonMode === 'specific'" class="mt-6 p-4 bg-gray-600 rounded-lg border border-gray-500">
+                                            <h6 class="text-white font-medium mb-4 text-center">Seleziona Domini da Confrontare:</h6>
+                                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                                                <label v-for="domain in availableDomains" :key="domain" 
+                                                       class="flex items-center cursor-pointer p-3 bg-gray-500 rounded-lg hover:bg-gray-400 transition-colors border border-gray-400">
+                                                    <input type="checkbox" :value="domain" 
+                                                           :checked="selectedDomains.includes(domain)"
+                                                           @change="toggleDomainSelection(domain)"
+                                                           class="mr-3 text-blue-500 focus:ring-blue-500">
+                                                    <span class="text-white font-medium">{{ getDomainDisplayName(domain) }}</span>
+                                                    <span class="ml-auto text-xs text-gray-300 bg-gray-700 px-2 py-1 rounded-full">{{ getDomainProductCount(domain) }}</span>
+                                                </label>
+                                            </div>
+                                            <div class="flex gap-3 justify-center">
+                                                <button @click="selectAllDomains" 
+                                                        class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors font-medium">
+                                                    Seleziona Tutti
+                                                </button>
+                                                <button @click="clearSelectedDomains" 
+                                                        class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white text-sm rounded-lg transition-colors font-medium">
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Descrizione Modalità e Pulsante Confronto -->
+                                        <div class="mt-6 text-center">
+                                            <div class="mb-4 p-3 bg-gray-600 border border-gray-500 rounded-lg">
+                                                <span class="text-gray-300 text-sm font-medium">{{ getComparisonModeDescription() }}</span>
+                                            </div>
+                                            
+                                            <button @click="startDatabaseComparison" :disabled="store.state.isComparing || !hasProductsToCompare()" 
+                                                    class="btn-primary text-xl px-8 py-4 text-center w-full max-w-md mx-auto">
+                                                <span v-if="store.state.isComparing">
+                                                    <i class="fas fa-spinner fa-spin mr-3"></i>
+                                                    Confronto in corso...
+                                                </span>
+                                                <span v-else>
+                                                    <i class="fas fa-balance-scale mr-3"></i>
+                                                    {{ comparisonMode === 'all' ? 'Confronta Tutti i Prodotti' : 'Confronta Domini Selezionati' }}
+                                                </span>
+                                            </button>
+                                            
+                                            <div class="mt-3 text-sm text-gray-400 font-medium">
+                                                {{ getComparisonButtonDescription() }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Risultati Confronto SOPRA la lista -->
+                                <div v-if="store.state.comparisonResults && store.state.comparisonResults.matches && store.state.comparisonResults.matches.length > 0" class="mb-6">
+                                    <h5 class="text-lg font-semibold mb-4"><i class="fas fa-chart-bar text-gray-400 mr-2"></i>Risultati Confronto - Prodotti Simili Trovati</h5>
+                                    
+                                    <!-- Statistiche Confronto -->
+                                    <div class="bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg p-4 mb-4">
+                                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">{{ store.state.comparisonResults.matches.length }}</div>
+                                                <div class="text-sm text-purple-200">Gruppi Trovati</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">{{ getTotalProductsInMatches() }}</div>
+                                                <div class="text-sm text-purple-200">Prodotti Confrontati</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">€{{ getTotalSavingsOpportunity() }}</div>
+                                                <div class="text-sm text-purple-200">Opportunità Totale</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">{{ getMaxSavingsOverall() }}%</div>
+                                                <div class="text-sm text-purple-200">Risparmio Max</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Cards Confronto -->
+                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                        <div v-for="(match, index) in store.state.comparisonResults.matches" :key="index" 
+                                             class="bg-gray-700 border border-gray-600 rounded-lg p-4">
+                                            <div class="flex items-center justify-between mb-3">
+                                                <h6 class="font-semibold text-lg">{{ getMatchTitle(match) }}</h6>
+                                                <span class="text-sm text-gray-400">{{ match.products.length }} varianti</span>
+                                            </div>
+                                            
+                                            <div class="space-y-3">
+                                                <div v-for="(product, pIndex) in match.products" :key="pIndex" 
+                                                     class="flex items-center justify-between p-3 bg-gray-600 rounded">
+                                        <div class="flex-1">
+                                                        <div class="font-medium text-blue-400">{{ getSiteNameFromProduct(product) }}</div>
+                                                        <div class="text-sm text-gray-300">{{ product.original_name }}</div>
+                                                        <div v-if="product.brand" class="text-xs text-gray-400">{{ product.brand }}</div>
+                                        </div>
+                                        <div class="text-right">
+                                                        <div class="text-lg font-bold text-green-400">€{{ product.normalized_price?.toFixed(2) || 'N/A' }}</div>
+                                                    </div>
+                                        </div>
+                                    </div>
+                                    
+                                            <div class="mt-3 pt-3 border-t border-gray-600">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm text-gray-400">Risparmio massimo:</span>
+                                                    <span class="text-lg font-bold text-orange-400">
+                                                        {{ getMaxSavingsForMatch(match) }}%
+                                                    </span>
+                                            </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm text-gray-400">Range prezzi:</span>
+                                                    <span class="text-sm font-medium text-green-400">
+                                                        €{{ match.price_statistics?.min_price?.toFixed(2) || 'N/A' }} - €{{ match.price_statistics?.max_price?.toFixed(2) || 'N/A' }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm text-gray-400">Differenza:</span>
+                                                    <span class="text-sm font-medium text-red-400">
+                                                        €{{ getPriceDifference(match) }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                        </div>
+                                        
+                                <!-- No Matches Found -->
+                                <div v-else-if="store.state.comparisonResults && store.state.comparisonResults.matches && store.state.comparisonResults.matches.length === 0" class="text-center py-4 mb-6">
+                                    <i class="fas fa-search text-2xl text-gray-400 mb-2"></i>
+                                    <p class="text-gray-400">Nessun prodotto simile trovato</p>
+                                    <p class="text-sm text-gray-500">I prodotti potrebbero avere nomi troppo diversi</p>
+                                            </div>
+                                
+                                <!-- Waiting for Results -->
+                                <div v-else-if="store.state.isComparing" class="text-center py-4 mb-6">
+                                    <i class="fas fa-spinner fa-spin text-2xl text-blue-400 mb-2"></i>
+                                    <h4 class="text-lg font-semibold text-gray-300 mb-2">Confronto in Corso...</h4>
+                                    <p class="text-gray-400">L'AI sta analizzando i prodotti per trovare le migliori offerte</p>
+                                        </div>
+                                    </div>
+                                    
+                            <!-- Lista Prodotti Database -->
+                            <div v-if="store.state.databaseProducts && store.state.databaseProducts.length > 0" class="space-y-4">
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-gray-800 rounded-lg">
+                                        <thead class="bg-gray-700">
+                                            <tr>
+                                                <th class="p-2 text-left text-gray-300">Prodotto</th>
+                                                <th class="p-2 text-left text-gray-300">Prezzo</th>
+                                                <th class="p-2 text-left text-gray-300">Marca</th>
+                                                <th class="p-2 text-left text-gray-300">Sito</th>
+                                                <th class="p-2 text-left text-gray-300">Data</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr v-for="(product, index) in store.state.databaseProducts" :key="index" 
+                                                 class="border-b border-gray-700 hover:bg-gray-700">
+                                                <td class="p-2">
+                                                    <div class="font-medium">{{ product.name }}</div>
+                                                    <div v-if="product.url" class="text-xs text-blue-400">
+                                                        <a :href="product.url" target="_blank" class="hover:underline">
+                                                            Vedi Prodotto →
+                                                        </a>
+                                        </div>
+                                                </td>
+                                                <td class="p-2 text-green-400 font-semibold">{{ product.price }}</td>
+                                                <td class="p-2">{{ product.brand || 'N/A' }}</td>
+                                                <td class="p-2">
+                                                    <div class="text-blue-400 font-medium">{{ getSiteNameFromProduct(product) }}</div>
+                                                    <div class="text-xs text-gray-400">{{ product.source || 'N/A' }}</div>
+                                                </td>
+                                                <td class="p-2 text-xs text-gray-400">
+                                                    {{ formatDate(product.session_id) }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    
+                                    <!-- Info prodotti -->
+                                    <div class="text-center py-4 text-gray-400">
+                                        Mostrando {{ store.state.databaseProducts.length }} prodotti totali
+                                        <span v-if="selectedDomain" class="text-blue-400"> (filtrati per {{ selectedDomain }})</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            
+                            <!-- No Products -->
+                            <div v-else-if="!store.state.isLoadingDbProducts" class="text-center py-8">
+                                <i class="fas fa-database text-3xl text-gray-400 mb-3"></i>
+                                <p class="text-gray-400 mb-2">Nessun prodotto nel database</p>
+                                <p class="text-sm text-gray-500">Clicca "Carica Prodotti" per iniziare</p>
+                            </div>
+
+                            <!-- Loading -->
+                            <div v-else class="text-center py-8">
+                                <i class="fas fa-spinner fa-spin text-3xl text-blue-400 mb-3"></i>
+                                <p class="text-gray-400">Caricamento prodotti...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System Configuration Section -->
+                <div v-if="activeSection === 'system-config'" class="fade-in content-section">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4"><i class="fas fa-cog text-gray-400 mr-2"></i>Configurazione Sistema - Controllo Browser e Anti-Bot</h3>
+                        
+                        <div class="space-y-6">
+                            <!-- Browser Visibility Control -->
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <h4 class="text-lg font-semibold mb-4"><i class="fas fa-desktop text-gray-400 mr-2"></i>Controllo Visibilità Browser</h4>
+                                <p class="text-sm text-gray-400 mb-4">
+                                    Controlla come il browser si comporta durante lo scraping per evitare il rilevamento bot
+                                </p>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                    <!-- Modalità Normale -->
+                                    <div class="bg-gray-700 rounded-lg p-4 border-2" 
+                                         :class="browserConfig.mode === 'normal' ? 'border-blue-500 bg-blue-900 bg-opacity-30' : 'border-gray-600'">
+                                    <div class="text-center">
+                                            <i class="fas fa-eye text-2xl mb-2" :class="browserConfig.mode === 'normal' ? 'text-blue-400' : 'text-gray-400'"></i>
+                                            <h5 class="font-semibold mb-2">Modalità Normale</h5>
+                                            <p class="text-xs text-gray-400">Browser invisibile (headless) per siti semplici</p>
+                                            <div class="mt-3">
+                                                <button @click="setBrowserMode('normal')" 
+                                                        class="px-3 py-1 rounded text-xs"
+                                                        :class="browserConfig.mode === 'normal' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-300'">
+                                                    Attiva
+                                                </button>
+                                    </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modalità Stealth -->
+                                    <div class="bg-gray-700 rounded-lg p-4 border-2" 
+                                         :class="browserConfig.mode === 'stealth' ? 'border-green-500 bg-green-900 bg-opacity-30' : 'border-gray-600'">
+                                    <div class="text-center">
+                                            <i class="fas fa-user-secret text-2xl mb-2" :class="browserConfig.mode === 'stealth' ? 'text-green-400' : 'text-gray-400'"></i>
+                                            <h5 class="font-semibold mb-2">Modalità Stealth</h5>
+                                            <p class="text-xs text-gray-400">Browser invisibile ma non headless (anti-bot)</p>
+                                            <div class="mt-3">
+                                                <button @click="setBrowserMode('stealth')" 
+                                                        class="px-3 py-1 rounded text-xs bg-green-600 text-white">
+                                                    Attiva
+                                                </button>
+                                    </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Modalità Visibile -->
+                                    <div class="bg-gray-700 rounded-lg p-4 border-2" 
+                                         :class="browserConfig.mode === 'visible' ? 'border-orange-500 bg-orange-900 bg-opacity-30' : 'border-gray-600'">
+                                    <div class="text-center">
+                                            <i class="fas fa-desktop text-2xl mb-2" :class="browserConfig.mode === 'visible' ? 'text-orange-400' : 'text-gray-400'"></i>
+                                            <h5 class="font-semibold mb-2">Modalità Visibile</h5>
+                                            <p class="text-xs text-gray-400">Browser completamente visibile per debug</p>
+                                            <div class="mt-3">
+                                                <button @click="setBrowserMode('visible')" 
+                                                        class="px-3 py-1 rounded text-xs"
+                                                        :class="browserConfig.mode === 'visible' ? 'bg-orange-600 text-white' : 'bg-gray-600 text-gray-300'">
+                                                    {{ browserConfig.mode === 'visible' ? 'Attiva' : 'Attiva' }}
+                                                </button>
+                                            </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                                <!-- Configurazione Avanzata -->
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <h5 class="font-semibold mb-3">🔧 Configurazione Avanzata</h5>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <!-- Timeout -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-400 mb-2">Timeout Pagina (secondi)</label>
+                                            <input v-model="browserConfig.timeout" type="number" min="10" max="120" 
+                                                   class="input-modern" placeholder="60">
+                                            <p class="text-xs text-gray-500 mt-1">Tempo massimo per caricare una pagina</p>
+                            </div>
+                                        
+                                        <!-- Delay Umano -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-400 mb-2">Delay Umano (secondi)</label>
+                                            <input v-model="browserConfig.humanDelay" type="number" min="0.5" max="10" step="0.5" 
+                                                   class="input-modern" placeholder="2.0">
+                                            <p class="text-xs text-gray-500 mt-1">Ritardo per simulare comportamento umano</p>
+                        </div>
+
+                                        <!-- User Agent -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-400 mb-2">User Agent</label>
+                                            <select v-model="browserConfig.userAgent" class="input-modern">
+                                                <option value="auto">Auto (Rotazione)</option>
+                                                <option value="chrome">Chrome Windows</option>
+                                                <option value="firefox">Firefox Windows</option>
+                                                <option value="safari">Safari Mac</option>
+                                                <option value="edge">Edge Windows</option>
+                                            </select>
+                                            <p class="text-xs text-gray-500 mt-1">Browser da simulare</p>
+                                        </div>
+                                        
+                                        <!-- Proxy -->
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-400 mb-2">Proxy (opzionale)</label>
+                                            <input v-model="browserConfig.proxy" type="text" 
+                                                   class="input-modern" placeholder="http://proxy:porta">
+                                            <p class="text-xs text-gray-500 mt-1">Proxy per evitare blocchi IP</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Siti Anti-Bot -->
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <h5 class="font-semibold mb-3">🛡️ Siti con Anti-Bot Forte</h5>
+                                    <p class="text-sm text-gray-400 mb-3">
+                                        Questi siti useranno automaticamente la modalità stealth:
+                                    </p>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                                        <div v-for="site in antiBotSites" :key="site" 
+                                             class="bg-gray-600 rounded px-2 py-1 text-xs text-center">
+                                            {{ site }}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Test Configurazione -->
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <h5 class="font-semibold mb-3">🧪 Test Configurazione</h5>
+                                    <p class="text-sm text-gray-400 mb-3">
+                                        Testa la configurazione corrente su un sito di esempio
+                                    </p>
+                                    <div class="flex space-x-3">
+                                        <button @click="testBrowserConfig('https://www.unieuro.it/online/Computer-e-Tablet/Computer-Portatili/Notebook')" 
+                                                class="btn-secondary">
+                                            <i class="fas fa-flask mr-2"></i>Test Unieuro
+                                        </button>
+                                        <button @click="testBrowserConfig('https://www.immobiliare.it/vendita-case/milano/')" 
+                                                class="btn-secondary">
+                                            <i class="fas fa-home mr-2"></i>Test Immobiliare
+                                        </button>
+                                        <button @click="testBrowserConfig('https://www.amazon.it/s?k=notebook')" 
+                                                class="btn-secondary">
+                                            <i class="fab fa-amazon mr-2"></i>Test Amazon
+                            </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Salva Configurazione -->
+                                <div class="flex justify-end space-x-3 mt-6">
+                                    <button @click="resetBrowserConfig" class="btn-secondary">
+                                        <i class="fas fa-undo mr-2"></i>Reset
+                                    </button>
+                                    <button @click="saveBrowserConfig" class="btn-primary">
+                                        <i class="fas fa-save mr-2"></i>Salva Configurazione
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Google Search Section -->
+                <div v-if="activeSection === 'google-search'" class="fade-in content-section">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4">Google Search - Trova Venditori Alternativi</h3>
+                        
+                        <div class="space-y-6">
+                            <!-- Input Section -->
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <h4 class="text-lg font-semibold mb-4">Ricerca Venditori Alternativi</h4>
+                            <div class="space-y-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-300 mb-2">Nome Prodotto</label>
+                                        <input :value="store.state.googleSearchData.name" 
+                                               @input="updateGoogleSearchData('name', $event.target.value)"
+                                               type="text" 
+                                               placeholder="es. iPhone 15 Pro 128GB, Samsung Galaxy S24, MacBook Air M2..."
+                                               class="w-full bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-600">
+                                        <p class="text-xs text-gray-400 mt-1">Inserisci solo il nome del prodotto. Gli altri campi sono opzionali.</p>
+                                    </div>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                            <label class="block text-sm font-medium text-gray-300 mb-2">Brand (opzionale)</label>
+                                            <input :value="store.state.googleSearchData.brand" 
+                                                   @input="updateGoogleSearchData('brand', $event.target.value)"
+                                                   type="text" 
+                                                   placeholder="es. Apple, Samsung"
+                                                   class="w-full bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-600">
+                                    </div>
+                                    <div>
+                                            <label class="block text-sm font-medium text-gray-300 mb-2">Prezzo (opzionale)</label>
+                                            <input :value="store.state.googleSearchData.price" 
+                                                   @input="updateGoogleSearchData('price', $event.target.value)"
+                                                   type="text" 
+                                                   placeholder="es. 1.199,00€"
+                                                   class="w-full bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-600">
+                                        </div>
+                                    <div>
+                                            <label class="block text-sm font-medium text-gray-300 mb-2">Venditore (opzionale)</label>
+                                            <input :value="store.state.googleSearchData.source" 
+                                                   @input="updateGoogleSearchData('source', $event.target.value)"
+                                                   type="text" 
+                                                   placeholder="es. amazon.it"
+                                                   class="w-full bg-gray-700 text-white rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400 border border-gray-600">
+                                    </div>
+                                </div>
+                                    <div class="mt-4">
+                                        <button @click="startGoogleSearch" 
+                                                :disabled="!store.state.googleSearchData.name || store.state.isGoogleSearching"
+                                                class="btn-primary w-full">
+                                            <i class="fas fa-search mr-2"></i>
+                                            <span v-if="!store.state.isGoogleSearching">Cerca Venditori Alternativi</span>
+                                            <span v-else>Cercando...</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Risultati Google Search -->
+                        <div v-if="store.state.googleSearchResults.length > 0" class="mt-6">
+                                                                                            <h4 class="text-lg font-semibold mb-4"><i class="fas fa-search text-gray-400 mr-2"></i>Venditori Alternativi Trovati</h4>
+                            
+                            <!-- Tabella risultati uniforme -->
+                            <div class="data-table">
+                                <table class="w-full">
+                                    <thead>
+                                        <tr>
+                                            <th>Prodotto</th>
+                                            <th>Prezzo</th>
+                                            <th>Venditore</th>
+                                            <th>Qualità</th>
+                                            <th>Azioni</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(result, index) in store.state.googleSearchResults" :key="index">
+                                            <td>
+                                                <p class="font-medium">{{ result.name }}</p>
+                                                <p class="text-xs text-gray-400 mt-1">{{ result.description }}</p>
+                                            </td>
+                                            <td class="font-semibold text-green-400">{{ result.price }}</td>
+                                            <td class="text-sm">{{ result.source }}</td>
+                                            <td>
+                                                <div class="flex items-center">
+                                                                                                    <div class="w-16 bg-gray-700 rounded-full h-2 mr-2">
+                                                    <div class="h-2 rounded-full bg-green-500" 
+                                                         :style="{ width: getScorePercentage(result.validation_score) + '%' }"></div>
+                                                </div>
+                                                <span class="text-xs text-gray-400">{{ getScorePercentage(result.validation_score) }}%</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <button @click="openVendorUrl(result.url)" 
+                                                        class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-xs">
+                                                    <i class="fas fa-external-link-alt mr-1"></i>Apri
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Statistiche risultati -->
+                            <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-center">
+                                    <div class="text-xl font-bold text-blue-400">{{ store.state.googleSearchResults.length }}</div>
+                                    <div class="text-sm text-gray-300">Venditori Trovati</div>
+                                </div>
+                                <div class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-center">
+                                    <div class="text-xl font-bold text-green-400">
+                                        €{{ getAveragePrice(store.state.googleSearchResults) }}
+                                    </div>
+                                    <div class="text-sm text-gray-300">Prezzo Medio</div>
+                                </div>
+                                <div class="bg-gray-700 border border-gray-600 rounded-lg p-3 text-center">
+                                    <div class="text-xl font-bold text-orange-400">
+                                        {{ getBestScore(store.state.googleSearchResults) }}%
+                                    </div>
+                                    <div class="text-sm text-gray-300">Miglior Score</div>
+                                </div>
+                            </div>
+                        </div>
+
+                            <!-- Loading State -->
+                            <div v-if="store.state.isGoogleSearching" 
+                                 class="text-center py-16 bg-gradient-to-br from-blue-900/20 to-purple-900/20 rounded-2xl border border-blue-500/30">
+                                <div class="animate-spin rounded-full h-16 w-16 border-4 border-blue-400 border-t-transparent mx-auto mb-6"></div>
+                                <h3 class="text-xl font-semibold text-blue-300 mb-2">Ricerca in Corso</h3>
+                                <p class="text-blue-200/80">Stiamo cercando venditori alternativi per il tuo prodotto...</p>
+                                <div class="mt-4 flex justify-center space-x-2">
+                                    <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></div>
+                                    <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                                    <div class="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                                </div>
+                            </div>
+
+                            <!-- Initial State - Mostra sempre se non abbiamo ancora cercato -->
+                            <div v-if="!store.state.isGoogleSearching && store.state.googleSearchResults.length === 0 && !store.state.hasSearched" 
+                                 class="text-center py-16 bg-gradient-to-br from-gray-800/50 to-gray-700/50 rounded-2xl border border-gray-600/50">
+                                <div class="max-w-md mx-auto">
+                                    <div class="bg-gradient-to-br from-blue-500 to-purple-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                        <i class="fas fa-search text-3xl text-white"></i>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-gray-200 mb-4">Inizia la Ricerca</h3>
+                                    <p class="text-gray-300 text-lg mb-6">Inserisci i dati di un prodotto per trovare venditori alternativi e confrontare i prezzi</p>
+                                    <div class="bg-gray-800/80 rounded-xl p-4 border border-gray-600/50">
+                                        <div class="flex items-center text-gray-400 mb-2">
+                                            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                                            <span class="font-medium">Suggerimento</span>
+                                        </div>
+                                        <p class="text-gray-300 text-sm">Compila almeno il nome del prodotto per ottenere i migliori risultati</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- No Results State - Solo se non ci sono risultati E non stiamo scrivendo E abbiamo già fatto almeno una ricerca -->
+                            <div v-if="!store.state.isGoogleSearching && store.state.googleSearchResults.length === 0 && store.state.googleSearchData.name && !store.state.isTypingNewSearch && store.state.hasSearched" 
+                                 class="text-center py-16 bg-gradient-to-br from-orange-900/20 to-red-900/20 rounded-2xl border border-orange-500/30">
+                                <div class="max-w-lg mx-auto">
+                                    <div class="bg-gradient-to-br from-orange-500 to-red-500 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                        <i class="fas fa-exclamation-triangle text-3xl text-white"></i>
+                                    </div>
+                                    <h3 class="text-2xl font-bold text-orange-300 mb-2">Nessun Risultato Trovato</h3>
+                                    <p class="text-orange-200/80 text-lg mb-6">Non abbiamo trovato venditori alternativi per <span class="font-semibold">"{{ store.state.googleSearchData.name }}"</span></p>
+                                    
+                                    <div class="bg-gray-800/80 rounded-xl p-6 border border-gray-600/50 text-left">
+                                        <h4 class="font-semibold text-gray-200 mb-4 flex items-center">
+                                            <i class="fas fa-lightbulb text-yellow-400 mr-2"></i>
+                                            Suggerimenti per Ampliare la Ricerca
+                                        </h4>
+                                        <div class="grid md:grid-cols-2 gap-4">
+                                            <div class="bg-gray-700/50 rounded-lg p-3">
+                                                <div class="flex items-start">
+                                                    <i class="fas fa-arrow-right text-blue-400 mt-1 mr-2"></i>
+                                                    <div>
+                                                        <p class="font-medium text-gray-200 text-sm">Usa Termini Generici</p>
+                                                        <p class="text-gray-400 text-xs">"smartphone" invece di "iPhone 15 Pro Max"</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="bg-gray-700/50 rounded-lg p-3">
+                                                <div class="flex items-start">
+                                                    <i class="fas fa-arrow-right text-blue-400 mt-1 mr-2"></i>
+                                                    <div>
+                                                        <p class="font-medium text-gray-200 text-sm">Rimuovi Brand Specifici</p>
+                                                        <p class="text-gray-400 text-xs">Se non sono essenziali per la ricerca</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="bg-gray-700/50 rounded-lg p-3">
+                                                <div class="flex items-start">
+                                                    <i class="fas fa-arrow-right text-blue-400 mt-1 mr-2"></i>
+                                                    <div>
+                                                        <p class="font-medium text-gray-200 text-sm">Parole Chiave Comuni</p>
+                                                        <p class="text-gray-400 text-xs">Usa termini più generici e diffusi</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="bg-gray-700/50 rounded-lg p-3">
+                                                <div class="flex items-start">
+                                                    <i class="fas fa-arrow-right text-blue-400 mt-1 mr-2"></i>
+                                                    <div>
+                                                        <p class="font-medium text-gray-200 text-sm">Senza Caratteristiche Tecniche</p>
+                                                        <p class="text-gray-400 text-xs">Prova senza specifiche troppo dettagliate</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                                        </div>
+                                                </div>
+                                            </div>
+
+                <!-- Scheduling Section -->
+                <div v-if="activeSection === 'scheduling'" class="fade-in content-section">
+                    <div class="glass-card p-6">
+                        <h3 class="text-lg font-semibold mb-4"><i class="fas fa-clock text-gray-400 mr-2"></i>Scheduling & Monitoring - Tieni Sotto Controllo i Prezzi</h3>
+                        
+                        <!-- Product Selection -->
+                        <div v-if="store.state.genericResults.length > 0" class="space-y-6">
+                            <!-- Info Panel -->
+                            <div class="bg-blue-900 bg-opacity-20 border border-blue-500 rounded-lg p-4 mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-info-circle text-blue-400 mr-2"></i>
+                                    <div>
+                                        <p class="text-blue-200 font-medium">Prodotti Caricati dal Database</p>
+                                        <p class="text-blue-300 text-sm">
+                                            {{ store.state.genericResults.reduce((total, site) => total + site.products.length, 0) }} prodotti disponibili per il monitoring
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Control Panel -->
+                            <div class="bg-gray-800 rounded-lg p-4">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h4 class="text-lg font-semibold">Seleziona Prodotti da Monitorare</h4>
+                                    <div class="flex space-x-2">
+                                        <button @click="loadProductsForScheduling" class="btn-secondary">
+                                            <i class="fas fa-sync-alt mr-2"></i>Ricarica Database
+                                        </button>
+                                        <button @click="selectAllProducts" class="btn-secondary">
+                                            <i class="fas fa-check-double mr-2"></i>Seleziona Tutti
+                                        </button>
+                                        <button @click="clearSelectedProducts" class="btn-secondary">
+                                            <i class="fas fa-times mr-2"></i>Deseleziona Tutti
+                                        </button>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-400">
+                                    Scegli i prodotti che vuoi monitorare per cambiamenti di prezzo e disponibilità
+                                </p>
+                            </div>
+
+                            <!-- Products Selection Grid -->
+                            <div class="space-y-4">
+                                <div v-for="siteResult in store.state.genericResults" :key="siteResult.url" 
+                                     class="bg-gray-800 rounded-lg p-4">
+                                    <div class="flex items-center justify-between mb-4">
+                                        <div class="flex-1 min-w-0">
+                                            <h5 class="font-semibold">{{ api.getSiteName(siteResult.url) }}</h5>
+                                            <p class="text-xs text-gray-400 break-all" :title="siteResult.url">{{ truncateUrl(siteResult.url) }}</p>
+                                        </div>
+                                        <span class="text-sm text-gray-400">{{ siteResult.products.length }} prodotti</span>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                        <div v-for="(product, index) in siteResult.products" :key="index"
+                                             class="bg-gray-700 rounded-lg p-3 cursor-pointer transition-all"
+                                             :class="isProductSelected(siteResult.url, product) ? 'ring-2 ring-blue-500 bg-blue-900 bg-opacity-30' : 'hover:bg-gray-600'"
+                                             @click="toggleProductSelection(siteResult.url, product)">
+                                            
+                                            <div class="flex items-start justify-between">
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="font-medium text-sm truncate">{{ product.name }}</p>
+                                                    <p class="text-xs text-gray-400">{{ product.brand || product.address || 'N/A' }}</p>
+                                                </div>
+                                                <div class="ml-2 text-right">
+                                                    <p class="font-bold text-green-400 text-sm">{{ product.price }}</p>
+                                                    <i v-if="isProductSelected(siteResult.url, product)" 
+                                                       class="fas fa-check-circle text-blue-400 text-xs"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monitoring Configuration -->
+                            <div v-if="selectedProducts.length > 0" class="bg-gray-800 rounded-lg p-6">
+                                <h4 class="text-lg font-semibold mb-4"><i class="fas fa-sliders-h text-gray-400 mr-2"></i>Configurazione Monitoring</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- Frequency Settings -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Frequenza Controllo</label>
+                                        <select v-model="monitoringConfig.frequency" class="input-modern">
+                                            <option value="hourly">Ogni ora</option>
+                                            <option value="daily">Ogni giorno</option>
+                                            <option value="weekly">Ogni settimana</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Price Change Threshold -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Soglia Cambiamento Prezzo (%)</label>
+                                        <input v-model="monitoringConfig.priceThreshold" type="number" min="1" max="50" 
+                                               class="input-modern" placeholder="5">
+                                    </div>
+                                    
+                                    <!-- Notification Settings -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Tipo Notifica</label>
+                                        <div class="space-y-2">
+                                            <label class="flex items-center">
+                                                <input v-model="monitoringConfig.notifications.priceDecrease" type="checkbox" class="mr-2">
+                                                <span class="text-sm">Diminuzione prezzo</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input v-model="monitoringConfig.notifications.priceIncrease" type="checkbox" class="mr-2">
+                                                <span class="text-sm">Aumento prezzo</span>
+                                            </label>
+                                            <label class="flex items-center">
+                                                <input v-model="monitoringConfig.notifications.unavailable" type="checkbox" class="mr-2">
+                                                <span class="text-sm">Prodotto non disponibile</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Contact Info -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-400 mb-2">Email Notifiche</label>
+                                        <input v-model="monitoringConfig.email" type="email" 
+                                               class="input-modern" placeholder="tua@email.com">
+                                    </div>
+                                </div>
+                                
+                                <!-- Start Monitoring Button -->
+                                <div class="mt-6">
+                                    <button @click="startMonitoring" class="btn-primary w-full">
+                                        <i class="fas fa-play mr-2"></i>Avvia Monitoring
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div v-else class="text-center py-12">
+                            <i class="fas fa-clock text-4xl text-gray-500 mb-4"></i>
+                            <p class="text-gray-400 mb-4">Carica prodotti dal database per iniziare il monitoring automatico</p>
+                            <div class="space-y-4">
+                                <button @click="loadProductsForScheduling" class="btn-primary">
+                                    <i class="fas fa-database mr-2"></i>Carica Prodotti dal Database
+                                </button>
+                                <div class="text-sm text-gray-500">
+                                    <p>oppure</p>
+                                </div>
+                                <button @click="setActiveSection('scraping')" class="btn-secondary">
+                                    <i class="fas fa-globe mr-2"></i>Fai Nuovo Scraping
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Toggle Button -->
+        <button @click="toggleChatSidebar" 
+                class="chat-toggle-btn"
+                :class="{ 'chat-open': chatSidebarOpen }"
+                :title="chatSidebarOpen ? 'Chiudi Chat' : 'Apri Chat'">
+            <i :class="chatSidebarOpen ? 'fas fa-times' : 'fas fa-comments'"></i>
+        </button>
+
+        <!-- Chat AI Sidebar -->
+        <div class="chat-sidebar" :class="{ 'chat-sidebar-collapsed': !chatSidebarOpen }">
+            <div class="chat-content">
+            <div class="px-6 py-4 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white flex items-center">
+                    <i class="fas fa-robot text-green-400 mr-2"></i>
+                    Chat AI
+                </h3>
+                <p class="text-sm text-gray-400" style="font-size: 15.5px;">Il tuo assistente intelligente</p>
+                
+                <!-- AI Model Selector -->
+                <div class="mt-3">
+                    <label class="block text-xs text-gray-400 mb-1" style="font-size: 15.5px;">Modello AI:</label>
+                    <select :value="store.state.selectedAIModel" 
+                                @change="changeAIModel"
+                                class="w-full bg-gray-700 text-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-green-400 border border-gray-600"
+                                style="font-size: 15.5px;">
+                            <option value="openai">OpenAI GPT-4</option>
+                            <option value="gemini">Google Gemini</option>
+                            <option value="claude">Anthropic Claude</option>
+                            <option value="auto">Auto (Migliore Disponibile)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex-1 px-6 py-4 overflow-y-auto w-full min-h-0" ref="chatContainer">
+                <div v-if="store.state.chatMessages.length === 0" class="text-center text-gray-400 py-4">
+                    <i class="fas fa-comments text-2xl mb-2"></i>
+                    <p class="text-xs mb-2" style="font-size: 15.5px;">Inizia una conversazione!</p>
+                </div>
+
+                <div v-for="message in store.state.chatMessages" :key="message.id" class="mb-3">
+                    <div v-if="message.type === 'user'" class="flex justify-end w-full">
+                        <div class="bg-blue-600 text-white rounded-lg px-3 py-2 max-w-xs">
+                            <p class="text-base" style="font-size: 15.5px;">{{ message.content }}</p>
+                            <p class="text-xs opacity-75 mt-1">{{ message.timestamp }}</p>
+                        </div>
+                    </div>
+
+                    <div v-if="message.type === 'ai'" class="flex justify-start w-full">
+                        <div class="bg-gray-700 text-white rounded-lg px-3 py-2 max-w-xs">
+                            <div class="flex items-center mb-1">
+                                <i class="fas fa-robot text-green-400 mr-2 text-xs"></i>
+                                <span class="text-xs text-gray-400">{{ message.model || 'AI' }}</span>
+                            </div>
+                            <p class="text-base" style="font-size: 15.5px;">{{ message.content }}</p>
+                            <p class="text-xs opacity-75 mt-1">{{ message.timestamp }}</p>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 border-t border-gray-700 w-full">
+                    <!-- AI Suggestions -->
+                    <div v-if="store.state.chatMessages.length === 0" class="mb-4">
+                        <p class="text-base text-gray-400 mb-2" style="font-size: 15.5px;">Suggerimenti AI:</p>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button @click="sendSuggestion('Analizza i risultati dello scraping e trova i migliori prezzi')" 
+                                    class="text-left bg-gray-700 hover:bg-gray-600 text-white rounded px-3 py-2 text-xs transition-colors"
+                                    style="font-size: 15.5px;">
+                                Analizza i risultati dello scraping e trova i migliori prezzi
+                            </button>
+                            <button @click="sendSuggestion('Confronta i prodotti trovati e suggerisci il migliore')" 
+                                    class="text-left bg-gray-700 hover:bg-gray-600 text-white rounded px-3 py-2 text-xs transition-colors"
+                                    style="font-size: 15.5px;">
+                                Confronta i prodotti trovati e suggerisci il migliore
+                            </button>
+                            <button @click="sendSuggestion('Trova venditori alternativi per i prodotti monitorati')" 
+                                    class="text-left bg-gray-700 hover:bg-gray-600 text-white rounded px-3 py-2 text-xs transition-colors"
+                                    style="font-size: 15.5px;">
+                                Trova venditori alternativi per i prodotti monitorati
+                            </button>
+                            <button @click="sendSuggestion('Genera un report delle statistiche del sistema')" 
+                                    class="text-left bg-gray-700 hover:bg-gray-600 text-white rounded px-3 py-2 text-xs transition-colors"
+                                    style="font-size: 15.5px;">
+                                Genera un report delle statistiche del sistema
+                            </button>
+                </div>
+            </div>
+
+                <div class="flex space-x-2">
+                    <input :value="store.state.chatInput" 
+                           @input="updateChatInput"
+                           @keyup.enter="sendChatMessage"
+                           :disabled="store.state.isAITyping"
+                           type="text" 
+                           placeholder="Chiedi qualcosa..."
+                           class="flex-1 bg-gray-700 text-white rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 border border-gray-600"
+                           style="font-size: 15.5px;">
+                    <button @click="sendChatMessage" 
+                            :disabled="!store.state.chatInput.trim() || store.state.isAITyping"
+                            class="bg-green-600 hover:bg-red-700 disabled:bg-gray-600 text-white px-3 py-2 rounded text-sm">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                    <button @click="resetChat" 
+                            :disabled="store.state.isAITyping"
+                            class="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded text-sm"
+                            title="Resetta conversazione">
+                        <i class="fas fa-trash text-xs"></i>
+                    </button>
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+                    <!-- Carica i moduli JavaScript -->
+                <script src="/static/js/config.js"></script>
+                <script src="/static/js/api.js"></script>
+                <script src="/static/js/store.js"></script>
+                <script src="/static/js/charts.js"></script>
+                <script src="/static/js/actions.js?v=8&t=2025"></script>
+                <script>
+                    console.log('🔍 VERIFICA CARICAMENTO ACTIONS.JS');
+                    console.log('actions type:', typeof actions);
+                    if (typeof actions !== 'undefined') {
+                        console.log('✅ actions caricato correttamente');
+                        console.log('startGoogleSearch type:', typeof actions.startGoogleSearch);
+                    } else {
+                        console.error('❌ actions NON caricato!');
+                    }
+                </script>
+    
+    <!-- App principale -->
+    <script>
+        const { createApp } = Vue;
+
+        const app = createApp({
+            data() {
+                const initialState = store.getState();
+                return {
+                    // Usa lo store globale con valori di default sicuri
+                    activeSection: initialState.activeSection || 'dashboard',
+                    chatSidebarOpen: initialState.chatSidebarOpen || false,
+                    // Flag per tracciare l'inizializzazione dei grafici
+                    chartsInitialized: false,
+                    lastUpdate: initialState.lastUpdate || '',
+                    stats: initialState.stats || {},
+                    showDataSummary: initialState.showDataSummary || false,
+                    activityChart: initialState.activityChart || null,
+                    scrapingProgress: initialState.scrapingProgress || { pagesProcessed: 0, productsFound: 0, errors: 0, percentage: 0 },
+                    scrapingResults: initialState.scrapingResults || [],
+                    singleResults: initialState.singleResults || [],
+                    multipleResults: initialState.multipleResults || [],
+                    multipleUrls: initialState.multipleUrls || [''],
+                    aiConfig: initialState.aiConfig || { provider: 'auto', geminiConfigured: false, openaiConfigured: false },
+                    systemSettings: initialState.systemSettings || {},
+                    debugInfo: initialState.debugInfo || null,
+                    recentActivities: initialState.recentActivities || [],
+                    // Aggiungi l'oggetto api per renderlo disponibile nel template
+                    api: api,
+                    // Aggiungi l'oggetto actions per renderlo disponibile nel template
+                    actions: new Actions(),
+                    // Scheduling & Monitoring - Nuove variabili
+                    selectedProducts: [],
+                    monitoringConfig: {
+                        frequency: 'daily',
+                        priceThreshold: 5,
+                        notifications: {
+                            priceDecrease: true,
+                            priceIncrease: true,
+                            unavailable: true
+                        },
+                        email: ''
+                    },
+                    // Browser Configuration - Nuove variabili
+                    browserConfig: {
+                        mode: 'stealth', // 'normal', 'stealth', 'visible'
+                        timeout: 60,
+                        humanDelay: 2.0,
+                        userAgent: 'auto',
+                        proxy: ''
+                    },
+                    antiBotSites: [
+                        'unieuro.it', 'immobiliare.it', 'amazon.', 'ebay.', 
+                        'mediaworld.it', 'euronics.it', 'trony.it'
+                    ],
+                                         selectedDomain: '',  // Mantenuto per compatibilità
+                     availableDomains: [],
+                     databaseProducts: [],
+                     originalProducts: [],  // Prodotti originali che NON vengono mai modificati
+                     comparisonMode: 'all',  // 'all' o 'specific'
+                     selectedDomains: []  // Array di domini selezionati per confronto specifico
+                }
+            },
+            
+            methods: {
+                // Metodi di navigazione
+                setActiveSection(section) {
+                    store.setActiveSection(section);
+                },
+                
+                toggleChatSidebar() {
+                    store.toggleChatSidebar();
+                },
+                
+                getSectionTitle() {
+                    const titles = {
+                        'dashboard': 'Dashboard',
+                        'scraping': 'Scraping Generico',
+                        'comparison': 'Confronto Prodotti',
+                        'google-search': 'Google Search',
+                        'scheduling': 'Scheduling & Monitoring',
+                        'system-config': 'Configurazione Sistema'
+                    };
+                    return titles[this.activeSection] || 'Jusper';
+                },
+
+                getSectionDescription() {
+                    const descriptions = {
+                        'dashboard': 'Panoramica completa del sistema e statistiche in tempo reale',
+                        'scraping': 'Scraping generico avanzato con sistema AI per estrazione prodotti',
+                        'comparison': 'Confronto intelligente di prodotti tra diversi siti e calcolo risparmi',
+                        'google-search': 'Ricerca venditori alternativi tramite Google Shopping e DuckDuckGo',
+                        'scheduling': 'Scheduling e monitoring automatico dei prezzi con notifiche',
+                        'system-config': 'Configurazione avanzata del sistema, controllo browser e impostazioni anti-bot'
+                    };
+                    return descriptions[this.activeSection] || 'Benvenuto in Jusper';
+                },
+                
+                // Metodi per lo scraping
+                addUrl() {
+                    store.addUrl();
+                },
+                
+                removeUrl(index) {
+                    store.removeUrl(index);
+                },
+                
+                startGenericScraping() {
+                    actions.startGenericScraping();
+                },
+                
+                // Metodi per il confronto
+                startProductComparison() {
+                    actions.startProductComparison();
+                },
+                
+                // Metodi per il monitoring
+                selectAllProducts() {
+                    store.selectAllProducts();
+                },
+
+                clearSelectedProducts() {
+                    store.clearSelectedProducts();
+                },
+                
+                // Metodi per la chat
+                updateChatInput(event) {
+                    store.updateChatInput(event.target.value);
+                },
+                
+                async sendChatMessage() {
+                    const message = store.state.chatInput.trim();
+                    if (!message) return;
+                    
+                    console.log('💬 Invio messaggio chat:', message);
+                    
+                    // Aggiungi il messaggio dell'utente alla chat
+                    const userMessage = {
+                        id: Date.now(),
+                        type: 'user',
+                        content: message,
+                        timestamp: new Date().toLocaleTimeString('it-IT')
+                    };
+                    
+                    store.addChatMessage(userMessage);
+                    store.updateChatInput(''); // Pulisci l'input
+                    
+                    // Imposta stato di digitazione AI
+                    store.setState({ isAITyping: true });
+                    
+                    try {
+                        // Prepara il contesto per l'AI
+                        const contextData = {
+                            current_section: store.state.activeSection,
+                            scraping_results: store.state.genericResults.length > 0 ? {
+                                sites_count: store.state.genericResults.length,
+                                total_products: store.state.genericResults.reduce((total, site) => total + (site.products?.length || 0), 0),
+                                sites: store.state.genericResults.map(site => ({
+                                    url: site.url,
+                                    products_count: site.products?.length || 0,
+                                    sample_products: site.products?.slice(0, 3) || []
+                                }))
+                            } : null,
+                            comparison_results: store.state.comparisonResults ? {
+                                comparable_products: store.state.comparisonResults.comparable_products || 0,
+                                total_products: store.state.comparisonResults.total_products || 0,
+                                matches_count: store.state.comparisonResults.matches?.length || 0,
+                                sample_matches: store.state.comparisonResults.matches?.slice(0, 3) || []
+                            } : null,
+                            google_search: store.state.googleSearchResults.length > 0 ? {
+                                results_count: store.state.googleSearchResults.length,
+                                sample_results: store.state.googleSearchResults.slice(0, 3)
+                            } : null
+                        };
+                        
+                        // Prepara la richiesta per l'API
+                        const request = {
+                            message: message,
+                            model: store.state.selectedAIModel || 'openai',
+                            conversation_history: store.state.chatMessages.map(msg => ({
+                                role: msg.type === 'user' ? 'user' : 'assistant',
+                                content: msg.content
+                            })),
+                            context_data: contextData
+                        };
+                        
+                        console.log('📤 Invio richiesta chat:', request);
+                        
+                        // Chiama l'API della chat usando api.sendChatMessage
+                        const result = await api.sendChatMessage(
+                            request.message,
+                            request.model,
+                            request.conversation_history,
+                            request.context_data
+                        );
+                        
+                        console.log('✅ Risposta chat ricevuta:', result);
+                        
+                        if (result.success) {
+                            // Aggiungi la risposta dell'AI
+                            const aiMessage = {
+                                id: Date.now() + 1,
+                                type: 'ai',
+                                content: result.response,
+                                model: result.model_used,
+                                timestamp: new Date().toLocaleTimeString('it-IT')
+                            };
+                            
+                            store.addChatMessage(aiMessage);
+                            
+                            // Aggiungi attività
+                            store.addActivity({
+                                id: Date.now(),
+                                type: 'chat',
+                                icon: 'fas fa-comments',
+                                description: `Chat con ${result.model_used}: ${message.substring(0, 50)}...`,
+                                timestamp: new Date().toLocaleTimeString('it-IT'),
+                                status: 'success'
+                            });
+                            
+                        } else {
+                            // Errore nella risposta AI
+                            const errorMessage = {
+                                id: Date.now() + 1,
+                                type: 'ai',
+                                content: `❌ Errore: ${result.error || 'Risposta non valida dall\'AI'}`,
+                                model: 'error',
+                                timestamp: new Date().toLocaleTimeString('it-IT')
+                            };
+                            
+                            store.addChatMessage(errorMessage);
+                            
+                            store.addActivity({
+                                id: Date.now(),
+                                type: 'chat',
+                                icon: 'fas fa-exclamation-triangle',
+                                description: `Errore chat: ${result.error}`,
+                                timestamp: new Date().toLocaleTimeString('it-IT'),
+                                status: 'error'
+                            });
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Errore invio messaggio chat:', error);
+                        
+                        // Messaggio di errore
+                        const errorMessage = {
+                            id: Date.now() + 1,
+                            type: 'ai',
+                            content: `❌ Errore di connessione: ${error.message}`,
+                            model: 'error',
+                            timestamp: new Date().toLocaleTimeString('it-IT')
+                        };
+                        
+                        store.addChatMessage(errorMessage);
+                        
+                        store.addActivity({
+                            id: Date.now(),
+                            type: 'chat',
+                            icon: 'fas fa-exclamation-triangle',
+                            description: `Errore connessione chat: ${error.message}`,
+                            timestamp: new Date().toLocaleTimeString('it-IT'),
+                            status: 'error'
+                        });
+                        
+                    } finally {
+                        // Rimuovi stato di digitazione
+                        store.setState({ isAITyping: false });
+                    }
+                },
+                
+                // Metodi per Google Search
+                updateGoogleSearchData(field, value) {
+                    store.updateGoogleSearchData({ [field]: value });
+                    // Nasconde il messaggio "Ricerca terminata" quando si scrive
+                    store.setState({ isTypingNewSearch: true });
+                },
+                
+                startGoogleSearch() {
+                    // Reimposta isTypingNewSearch a false quando si avvia la ricerca
+                    store.setState({ isTypingNewSearch: false, hasSearched: true });
+                    actions.startGoogleSearch();
+                },
+                
+                sendSuggestion(suggestion) {
+                    store.updateChatInput(suggestion);
+                    this.sendChatMessage();
+                },
+                
+                changeAIModel(event) {
+                    store.setSelectedAIModel(event.target.value);
+                },
+                
+                updateScrapingUrl(index, value) {
+                    store.updateScrapingUrl(index, value);
+                },
+                
+                openVendorUrl(url) {
+                    actions.openVendorUrl(url);
+                },
+                
+                // Metodi per le statistiche
+                resetDailyStats() {
+                    store.resetDailyStats();
+                },
+                
+                // Metodi per il progresso - Semplificati
+                
+
+                
+                // Metodi per il tempo
+                updateTime() {
+                    store.updateTime();
+                },
+                
+                // Inizializzazione grafici
+                async initializeCharts() {
+                    try {
+                        if (window.chartManager && typeof window.chartManager.initializeCharts === 'function') {
+                            await window.chartManager.initializeCharts();
+                            this.chartsInitialized = true;
+                        } else {
+                            setTimeout(() => this.initializeCharts(), 100);
+                        }
+                    } catch (error) {
+                        console.error('Errore inizializzazione grafici:', error);
+                    }
+                },
+                
+                handleResize() {
+                    if (this.activeSection === 'dashboard' && this.chartsInitialized) {
+                        this.$nextTick(() => {
+                            if (window.chartManager && typeof window.chartManager.updateAllCharts === 'function') {
+                                window.chartManager.updateAllCharts();
+                            }
+                        });
+                    }
+                },
+                
+                // Metodi per lo Scheduling & Monitoring
+                selectAllProducts() {
+                    this.selectedProducts = [];
+                    this.store.state.genericResults.forEach(siteResult => {
+                        if (siteResult.success && siteResult.products) {
+                            siteResult.products.forEach(product => {
+                                this.selectedProducts.push({
+                                    url: siteResult.url,
+                                    product: product
+                                });
+                            });
+                        }
+                    });
+                    console.log('Selezionati', this.selectedProducts.length, 'prodotti');
+                },
+                
+                clearSelectedProducts() {
+                    this.selectedProducts = [];
+                },
+                
+                isProductSelected(url, product) {
+                    return this.selectedProducts.some(item => 
+                        item.url === url && item.product.name === product.name
+                    );
+                },
+                
+                toggleProductSelection(url, product) {
+                    const index = this.selectedProducts.findIndex(item => 
+                        item.url === url && item.product.name === product.name
+                    );
+                    
+                    if (index > -1) {
+                        this.selectedProducts.splice(index, 1);
+                    } else {
+                        this.selectedProducts.push({ url, product });
+                    }
+                },
+                
+                startMonitoring() {
+                                    if (this.selectedProducts.length === 0) {
+                    // RIMOSSO ALERT: Non interrompe più il flusso
+                    console.log('❌ Seleziona almeno un prodotto da monitorare');
+                    return;
+                }
+                
+                if (!this.monitoringConfig.email) {
+                    // RIMOSSO ALERT: Non interrompe più il flusso
+                    console.log('❌ Inserisci un indirizzo email per le notifiche');
+                    return;
+                }
+                    
+                    // Qui implementeremo la logica per avviare il monitoring
+                    console.log('Avvio monitoring per', this.selectedProducts.length, 'prodotti');
+                    console.log('Configurazione:', this.monitoringConfig);
+                    
+                    // RIMOSSO ALERT: Non interrompe più il flusso
+                    console.log(`✅ Monitoring avviato per ${this.selectedProducts.length} prodotti!`);
+                },
+                
+                async loadProductsForScheduling() {
+                    try {
+                        console.log('📦 Caricamento prodotti dal database per scheduling...');
+                        
+                        // Carica tutti i prodotti dal database
+                        const response = await fetch('/historical-products?limit=10000');
+                        if (!response.ok) {
+                            throw new Error('Errore nel caricamento prodotti');
+                        }
+                        
+                        const data = await response.json();
+                        console.log('✅ Prodotti caricati dal database:', data.products.length);
+                        
+                        if (data.products && data.products.length > 0) {
+                            // Raggruppa prodotti per sito
+                            const productsBySite = {};
+                            
+                            data.products.forEach(product => {
+                                const site = product.source || 'Database';
+                                if (!productsBySite[site]) {
+                                    productsBySite[site] = [];
+                                }
+                                productsBySite[site].push(product);
+                            });
+                            
+                            // Converte in formato compatibile con scheduling
+                            const formattedResults = Object.entries(productsBySite).map(([site, products]) => ({
+                                url: site,
+                                success: true,
+                                products: products,
+                                total_found: products.length
+                            }));
+                            
+                            // Aggiorna lo store con i prodotti del database
+                            this.store.state.genericResults = formattedResults;
+                            console.log('✅ Prodotti formattati per scheduling:', formattedResults.length, 'siti');
+                            
+                            // RIMOSSO ALERT: Non interrompe più il flusso
+                            console.log(`✅ Caricati ${data.products.length} prodotti da ${formattedResults.length} siti per il scheduling!`);
+                        } else {
+                            // RIMOSSO ALERT: Non interrompe più il flusso
+                            console.log('❌ Nessun prodotto trovato nel database. Esegui prima uno scraping.');
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Errore caricamento prodotti per scheduling:', error);
+                        // RIMOSSO ALERT: Non interrompe più il flusso
+                    }
+                },
+                
+                clearScrapingResults() {
+                    store.clearScrapingResults();
+                },
+                clearScrapedUrls() {
+                    // Pulisce solo gli URL scrapati, mantiene i risultati
+                    store.state.scrapedUrls = [];
+                    store.state.isScraping = false;
+                    store.state.scrapingProgress = 0;
+                    console.log("🧹 URL scrapati puliti");
+                },
+                clearUrl(index) {
+                    // Pulisce un singolo URL
+                    if (store.state.genericUrls && store.state.genericUrls[index] !== undefined) {
+                        store.state.genericUrls[index] = '';
+                        console.log(`🧹 URL ${index + 1} pulito`);
+                    } else {
+                        console.error(`❌ URL ${index} non trovato`);
+                    }
+                },
+                
+                selectAllProductsFromResult(result) {
+                    if (result.success && result.products) {
+                        result.products.forEach(product => {
+                            this.selectedProducts.push({
+                                url: result.url,
+                                product: product
+                            });
+                        });
+                        // Vai alla sezione scheduling
+                        this.setActiveSection('scheduling');
+                    }
+                },
+                
+                // Metodi helper per Google Search
+                getAveragePrice(results) {
+                    if (!results || results.length === 0) return '0,00';
+                    
+                    const prices = results
+                        .map(result => {
+                            const priceStr = result.price || '0';
+                            return parseFloat(priceStr.replace('€', '').replace(',', '.').trim()) || 0;
+                        })
+                        .filter(price => price > 0);
+                    
+                    if (prices.length === 0) return '0,00';
+                    
+                    const average = prices.reduce((sum, price) => sum + price, 0) / prices.length;
+                    return average.toFixed(2).replace('.', ',');
+                },
+                
+                getBestScore(results) {
+                    if (!results || results.length === 0) return 0;
+                    
+                    const scores = results
+                        .map(result => (result.validation_score || 0) * 100)
+                        .filter(score => score > 0);
+                    
+                    if (scores.length === 0) return 0;
+                    
+                    return Math.max(...scores).toFixed(0);
+                },
+                
+                getScorePercentage(score) {
+                    if (!score || isNaN(score)) return 0;
+                    // Arrotonda a 1 decimale per evitare numeri troppo lunghi
+                    return (Math.round(score * 1000) / 10).toFixed(1);
+                },
+                
+                getSiteName(url) {
+                    try {
+                        // Se è già un dominio senza http, usalo direttamente
+                        let domain = url;
+                        if (url.includes('://')) {
+                            domain = new URL(url).hostname;
+                        }
+                        
+                        // Rimuovi www. e estrai il nome principale
+                        domain = domain.replace('www.', '');
+                        const siteName = domain.split('.')[0];
+                        
+                        // Capitalizza la prima lettera
+                        return siteName.charAt(0).toUpperCase() + siteName.slice(1);
+                    } catch {
+                        // Se non è un URL valido, prova a estrarre il dominio
+                        try {
+                            const domain = url.replace('www.', '');
+                            const siteName = domain.split('.')[0];
+                            return siteName.charAt(0).toUpperCase() + siteName.slice(1);
+                        } catch {
+                            return 'Sito';
+                        }
+                    }
+                },
+                
+                formatProductDetails(product) {
+                    const details = [];
+                    
+                    // Caratteristiche immobili
+                    if (product.sqm) details.push(`MQ: ${product.sqm}`);
+                    if (product.rooms) details.push(`Locali: ${product.rooms}`);
+                    if (product.bathrooms) details.push(`Bagni: ${product.bathrooms}`);
+                    
+                    // Caratteristiche e-commerce
+                    if (product.brand) details.push(`Marca: ${product.brand}`);
+                    if (product.model) details.push(`Modello: ${product.model}`);
+                    if (product.weight) details.push(`Peso: ${product.weight}`);
+                    if (product.price_per_kg && product.price_per_kg !== '0,00€') details.push(`€/Kg: ${product.price_per_kg}`);
+                    if (product.rating) details.push(`⭐ ${product.rating}`);
+                    
+                    // Descrizione generica
+                    if (product.description && product.description.length > 50) {
+                        details.push(`${product.description.substring(0, 50)}...`);
+                    } else if (product.description) {
+                        details.push(product.description);
+                    }
+                    
+                    return details.join(' • ');
+                },
+                
+                resetChat() {
+                    store.setState({ chatMessages: [] });
+                },
+                
+                truncateUrl(url) {
+                    if (!url) return '';
+                    if (url.length <= 50) return url;
+                    return url.substring(0, 50) + '...';
+                },
+                
+                sendSuggestion(suggestion) {
+                    store.updateChatInput(suggestion);
+                    this.sendChatMessage();
+                },
+                
+                // Browser Configuration Methods
+                setBrowserMode(mode) {
+                    this.browserConfig.mode = mode;
+                    console.log(`🌐 Modalità browser impostata su: ${mode}`);
+                    
+                    // Salva automaticamente la configurazione
+                    localStorage.setItem('browserConfig', JSON.stringify(this.browserConfig));
+                    
+                    // Mostra notifica
+                    this.showNotification(`Modalità browser: ${mode}`, 'info');
+                    
+                    // Invia immediatamente la configurazione al backend
+                    this.updateBackendConfig();
+                },
+                
+                saveBrowserConfig() {
+                    // Salva la configurazione nel localStorage
+                    localStorage.setItem('browserConfig', JSON.stringify(this.browserConfig));
+                    
+                    // Invia configurazione al backend
+                    this.updateBackendConfig();
+                    
+                    this.showNotification('Configurazione salvata!', 'success');
+                },
+                
+                resetBrowserConfig() {
+                    this.browserConfig = {
+                        mode: 'stealth',
+                        timeout: 60,
+                        humanDelay: 2.0,
+                        userAgent: 'auto',
+                        proxy: ''
+                    };
+                    
+                    this.showNotification('Configurazione resettata!', 'info');
+                },
+                
+                updateBackendConfig() {
+                    // Invia configurazione al backend per aggiornare il comportamento
+                    console.log('📤 Invio configurazione al backend:', this.browserConfig);
+                    
+                    fetch('/api/browser-config', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(this.browserConfig)
+                    }).then(response => response.json())
+                    .then(data => {
+                        console.log('✅ Configurazione backend aggiornata:', data);
+                        this.showNotification(`Configurazione ${this.browserConfig.mode} inviata al backend!`, 'success');
+                    }).catch(error => {
+                        console.error('❌ Errore aggiornamento configurazione:', error);
+                        this.showNotification('❌ Errore invio configurazione al backend', 'error');
+                    });
+                },
+                
+                testBrowserConfig(url) {
+                    // Testa la configurazione corrente su un URL specifico
+                    console.log(`🧪 Test configurazione browser su: ${url}`);
+                    
+                    // Mostra notifica di test
+                    this.showNotification(`Test configurazione su ${this.getSiteName(url)}...`, 'info');
+                    
+                    // Invia richiesta di test al backend
+                    fetch('/fast-extract', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            url: url,
+                            browser_mode: this.browserConfig.mode,
+                            timeout: this.browserConfig.timeout,
+                            human_delay: this.browserConfig.humanDelay,
+                            user_agent: this.browserConfig.userAgent,
+                            proxy: this.browserConfig.proxy
+                        })
+                    }).then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.showNotification(`✅ Test completato! ${data.products?.length || 0} prodotti estratti`, 'success');
+                        } else {
+                            this.showNotification(`❌ Test fallito: ${data.error}`, 'error');
+                        }
+                    }).catch(error => {
+                        console.error('❌ Errore test configurazione:', error);
+                        this.showNotification('❌ Errore durante il test', 'error');
+                    });
+                },
+                
+                getSiteName(url) {
+                    try {
+                        // Se è già un dominio senza http, usalo direttamente
+                        let domain = url;
+                        if (url.includes('://')) {
+                            domain = new URL(url).hostname;
+                        }
+                        
+                        // Rimuovi www. e estrai il nome principale
+                        domain = domain.replace('www.', '');
+                        const siteName = domain.split('.')[0];
+                        
+                        // Capitalizza la prima lettera
+                        return siteName.charAt(0).toUpperCase() + siteName.slice(1);
+                    } catch {
+                        // Se non è un URL valido, prova a estrarre il dominio
+                        try {
+                            const domain = url.replace('www.', '');
+                            const siteName = domain.split('.')[0];
+                            return siteName.charAt(0).toUpperCase() + siteName.slice(1);
+                        } catch {
+                            return 'Sito';
+                        }
+                    }
+                },
+                
+                showNotification(message, type = 'info') {
+                    // Crea una notifica temporanea
+                    const notification = document.createElement('div');
+                    notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg text-white z-50 transition-all duration-300 ${
+                        type === 'success' ? 'bg-green-600' : 
+                        type === 'error' ? 'bg-red-600' : 
+                        'bg-blue-600'
+                    }`;
+                    notification.textContent = message;
+                    
+                    document.body.appendChild(notification);
+                    
+                    // Rimuovi dopo 3 secondi
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 3000);
+                },
+                
+                // Carica configurazione salvata
+                loadBrowserConfig() {
+                    const saved = localStorage.getItem('browserConfig');
+                    if (saved) {
+                        try {
+                            const parsedConfig = JSON.parse(saved);
+                            // Assicurati che la configurazione salvata sovrascriva quella di default
+                            this.browserConfig = { ...this.browserConfig, ...parsedConfig };
+                            console.log('📋 Configurazione browser caricata:', this.browserConfig);
+                            
+                            // Aggiorna immediatamente il backend con la configurazione caricata
+                            this.updateBackendConfig();
+                        } catch (error) {
+                            console.error('❌ Errore caricamento configurazione:', error);
+                        }
+                    } else {
+                        console.log('📋 Nessuna configurazione salvata, uso default');
+                    }
+                },
+                                getMaxSavingsForMatch(match) {
+                    if (!match || !match.price_statistics || !match.price_statistics.max_price || !match.price_statistics.min_price) return 'N/A';
+                    const maxSavings = ((match.price_statistics.max_price - match.price_statistics.min_price) / match.price_statistics.max_price) * 100;
+                    return maxSavings.toFixed(1);
+                },
+                getMaxSavingsOverall() {
+                    if (!store.state.comparisonResults || !store.state.comparisonResults.matches) return 'N/A';
+                    
+                    let maxSavings = 0;
+                    store.state.comparisonResults.matches.forEach(match => {
+                        if (match.price_statistics && match.price_statistics.max_price && match.price_statistics.min_price) {
+                            const savings = ((match.price_statistics.max_price - match.price_statistics.min_price) / match.price_statistics.max_price) * 100;
+                            if (savings > maxSavings) maxSavings = savings;
+                        }
+                    });
+                    
+                    return maxSavings > 0 ? maxSavings.toFixed(1) : 'N/A';
+                },
+                getTotalSavingsOpportunity() {
+                    if (!store.state.comparisonResults || !store.state.comparisonResults.matches) return 'N/A';
+                    
+                    let totalSavings = 0;
+                    store.state.comparisonResults.matches.forEach(match => {
+                        if (match.savings_opportunity) {
+                            totalSavings += match.savings_opportunity;
+                        }
+                    });
+                    
+                    return totalSavings > 0 ? totalSavings.toFixed(2) : 'N/A';
+                },
+                
+                getTotalProductsInMatches() {
+                    if (!store.state.comparisonResults || !store.state.comparisonResults.matches) return 0;
+                    
+                    let totalProducts = 0;
+                    store.state.comparisonResults.matches.forEach(match => {
+                        if (match.products) {
+                            totalProducts += match.products.length;
+                        }
+                    });
+                    
+                    return totalProducts;
+                },
+                
+                // Database Products Functions
+                loadDatabaseProducts() {
+                    console.log('🔄 Caricamento prodotti database...');
+                    store.setState({ isLoadingDbProducts: true });
+                    
+                    api.searchHistoricalProducts({})
+                        .then(response => {
+                            if (response.success) {
+                                const products = response.products || [];
+                                this.originalProducts = [...products];
+                                
+                                store.setState({ 
+                                    databaseProducts: products,
+                                    isLoadingDbProducts: false
+                                });
+                                
+                                console.log(`✅ Caricati ${products.length} prodotti dal database`);
+                                
+                                const domains = this.extractAvailableDomains(products);
+                                this.availableDomains = domains;
+                                
+                            } else {
+                                console.error('❌ Errore caricamento database:', response.error);
+                                store.setState({ isLoadingDbProducts: false });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Errore API database:', error);
+                            store.setState({ isLoadingDbProducts: false });
+                        });
+                },
+                
+                async startDatabaseComparison() {
+                    // PROTEZIONE: Assicurati che selectedDomains sia sempre un array
+                    if (!Array.isArray(this.selectedDomains)) {
+                        console.warn('⚠️ selectedDomains non è un array, resetto a array vuoto:', this.selectedDomains);
+                        this.selectedDomains = [];
+                    }
+                    
+                    // 🆕 SINCRONIZZAZIONE: Assicurati che i dati siano aggiornati
+                    await this.ensureProductsSynchronized();
+                    
+                    if (this.comparisonMode === 'all') {
+                        // Modalità "Tutti i Prodotti": confronta tutti i prodotti di tutti i siti
+                        const allProducts = this.originalProducts || [];
+                        
+                        if (allProducts.length === 0) {
+                            this.showNotification('⚠️ Nessun prodotto caricato! Clicca "Carica Prodotti" prima.', 'warning');
+                            return;
+                        }
+                        
+                        if (allProducts.length < 2) {
+                            this.showNotification('⚠️ Servono almeno 2 prodotti per confrontare!', 'warning');
+                            return;
+                        }
+                        
+                        console.log(`🔍 Confronto TUTTI i prodotti: ${allProducts.length} prodotti di tutti i siti`);
+                        await this.performComparison(allProducts);
+                        
+                    } else {
+                        // Modalità "Domini Specifici": confronta solo i domini selezionati
+                        if (this.selectedDomains.length < 2) {
+                            this.showNotification('⚠️ Seleziona almeno 2 domini per confrontare!', 'warning');
+                            return;
+                        }
+                        
+                        // 🆕 DEBUG COMPLETO: Verifica stato prodotti
+                        console.log(`📊 Stato: ${this.originalProducts?.length || 0} prodotti disponibili`);
+                        console.log(`🎯 Domini selezionati: ${this.selectedDomains.join(', ')}`);
+                        
+                        const selectedProducts = [];
+                        for (const domain of this.selectedDomains) {
+                            const domainProducts = this.originalProducts.filter(product => 
+                                product.source && product.source.includes(domain)
+                            );
+                            selectedProducts.push(...domainProducts);
+                        }
+                        
+                        console.log('🔍 Prodotti per dominio:');
+                        this.selectedDomains.forEach(domain => {
+                            const count = this.originalProducts.filter(product => 
+                                product.source && product.source.includes(domain)
+                            ).length;
+                            console.log(`  ${domain}: ${count} prodotti`);
+                        });
+                        
+                        if (selectedProducts.length < 2) {
+                            this.showNotification('⚠️ Non ci sono abbastanza prodotti nei domini selezionati!', 'warning');
+                            return;
+                        }
+                        
+                        console.log(`✅ Confronto: ${selectedProducts.length} prodotti da ${this.selectedDomains.length} domini`);
+                        await this.performComparison(selectedProducts);
+                    }
+                },
+                
+                // 🆕 METODO SINCRONIZZAZIONE: Assicura che i dati siano sempre aggiornati
+                async ensureProductsSynchronized() {
+                    console.log('🔄 Sincronizzazione prodotti...');
+                    
+                    // Se originalProducts è vuoto ma databaseProducts ha dati, sincronizza
+                    if ((!this.originalProducts || this.originalProducts.length === 0) && 
+                        store.state.databaseProducts && store.state.databaseProducts.length > 0) {
+                        
+                        this.originalProducts = [...store.state.databaseProducts];
+                        const domains = this.extractAvailableDomains(this.originalProducts);
+                        this.availableDomains = domains;
+                        console.log(`✅ Sincronizzato: ${this.originalProducts.length} prodotti da ${domains.length} domini`);
+                        
+                    } else if (this.originalProducts && this.originalProducts.length > 0) {
+                        console.log(`✅ Già sincronizzato: ${this.originalProducts.length} prodotti`);
+                    } else {
+                        // Solo se non stiamo già caricando, carica dal database
+                        if (!store.state.isLoadingDbProducts) {
+                            console.log('⚠️ Carico prodotti dal database...');
+                            await this.loadDatabaseProducts();
+                        } else {
+                            console.log('⏳ Caricamento già in corso, aspetto...');
+                        }
+                    }
+                },
+                
+                async performComparison(productsToCompare) {
+                    console.log(`🚀 Avvio confronto per ${productsToCompare.length} prodotti`);
+                    
+                    // Imposta stato di caricamento
+                    this.store.setState({ isComparing: true });
+                    
+                    try {
+                        // Prepara i dati per il confronto
+                        const comparisonData = {
+                            products: productsToCompare.map(product => ({
+                                name: product.name || product.original_name || 'N/A',
+                                brand: product.brand || product.original_brand || '',
+                                price: product.price || product.normalized_price || '0',
+                                source: product.source || product.source_url || 'Unknown',
+                                url: product.url || '',
+                                session_id: product.session_id || ''
+                            }))
+                        };
+                        
+                        console.log('📤 Invio per confronto:', comparisonData.products.length, 'prodotti');
+                        
+                        const requestBody = { 
+                            results: [{ 
+                                success: true, 
+                                url: 'database', 
+                                products: comparisonData.products 
+                            }] 
+                        };
+                        
+                        if (this.comparisonMode === 'specific' && this.selectedDomains && this.selectedDomains.length > 0) {
+                            requestBody.sources = this.selectedDomains;
+                            console.log('🎯 Domini selezionati:', this.selectedDomains);
+                        }
+                        
+                        // Chiama l'API di confronto (endpoint corretto)
+                        const response = await fetch('/compare-products', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(requestBody)
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`Errore API: ${response.status}`);
+                        }
+                        
+                        const result = await response.json();
+                        console.log('✅ Risultati confronto ricevuti:', result);
+                        
+                        // Aggiorna il store con i risultati
+                        this.store.setState({
+                            comparisonResults: result,
+                            isComparing: false
+                        });
+                        
+                        // Mostra notifica di successo con statistiche migliorate
+                        const matchCount = result.matches ? result.matches.length : 0;
+                        const totalProducts = result.total_products || 0;
+                        const comparableProducts = result.comparable_products || 0;
+                        
+                        // Se ci sono statistiche riassuntive, mostrale
+                        if (result.summary_stats) {
+                            const stats = result.summary_stats;
+                            const bestDeal = stats.best_deal;
+                            
+                            let notificationText = `✅ Confronto completato! `;
+                            notificationText += `${stats.total_groups} gruppi, ${stats.total_comparable_products} prodotti confrontabili`;
+                            
+                            if (bestDeal && bestDeal.savings > 0) {
+                                notificationText += ` | Miglior affare: ${bestDeal.product_name} a €${bestDeal.price} (risparmio €${bestDeal.savings})`;
+                            }
+                            
+                            this.showNotification(notificationText, 'success');
+                        } else {
+                            this.showNotification(`✅ Confronto completato! Trovati ${matchCount} gruppi di prodotti simili`, 'success');
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ Errore durante il confronto:', error);
+                        this.store.setState({ isComparing: false });
+                        this.showNotification(`❌ Errore durante il confronto: ${error.message}`, 'error');
+                    }
+                },
+                
+                parsePrice(priceString) {
+                    if (!priceString) return 0;
+                    try {
+                        // Rimuovi simboli di valuta e spazi, sostituisci virgola con punto
+                        const cleanPrice = priceString.replace(/[€$£\s]/g, '').replace(',', '.');
+                        const price = parseFloat(cleanPrice);
+                        return isNaN(price) ? 0 : price;
+                    } catch {
+                        return 0;
+                    }
+                },
+                
+                normalizeProductName(name) {
+                    if (!name) return '';
+                    
+                    // Normalizza il nome del prodotto per il confronto
+                    let normalized = name.toLowerCase()
+                        .replace(/[^\w\s]/g, ' ')  // Rimuovi caratteri speciali
+                        .replace(/\s+/g, ' ')      // Sostituisci spazi multipli con uno
+                        .trim();
+                    
+                    // Rimuovi parole comuni che non aiutano il confronto
+                    const commonWords = [
+                        'notebook', 'laptop', 'computer', 'portatile', 'pc', 'desktop',
+                        'smartphone', 'telefono', 'cellulare', 'mobile', 'phone',
+                        'tablet', 'ipad', 'android', 'ios', 'windows', 'mac',
+                        'intel', 'amd', 'core', 'i3', 'i5', 'i7', 'i9', 'ryzen',
+                        'gb', 'tb', 'ram', 'ssd', 'hdd', 'hard disk',
+                        'inch', 'pollici', 'cm', 'mm', 'kg', 'g',
+                        'wifi', 'bluetooth', '4g', '5g', 'lte',
+                        'camera', 'fotocamera', 'webcam', 'microfono', 'altoparlanti'
+                    ];
+                    
+                    // Rimuovi parole comuni dalla fine
+                    commonWords.forEach(word => {
+                        const regex = new RegExp(`\\b${word}\\b`, 'gi');
+                        normalized = normalized.replace(regex, '');
+                    });
+                    
+                    // Rimuovi spazi extra e normalizza
+                    normalized = normalized.replace(/\s+/g, ' ').trim();
+                    
+                    return normalized;
+                },
+                
+                // Funzione per verificare se due prodotti sono della stessa categoria
+                isSameCategory(product1, product2) {
+                    const categories = {
+                        'laptop': ['notebook', 'laptop', 'computer', 'portatile', 'pc'],
+                        'smartphone': ['smartphone', 'telefono', 'cellulare', 'mobile', 'phone'],
+                        'tablet': ['tablet', 'ipad'],
+                        'food': ['latte', 'uova', 'yogurt', 'margarina', 'formaggio', 'panna'],
+                        'appliance': ['lavatrice', 'frigorifero', 'forno', 'microonde']
+                    };
+                    
+                    const name1 = product1.name?.toLowerCase() || '';
+                    const name2 = product2.name?.toLowerCase() || '';
+                    
+                    for (const [category, keywords] of Object.entries(categories)) {
+                        const hasKeyword1 = keywords.some(keyword => name1.includes(keyword));
+                        const hasKeyword2 = keywords.some(keyword => name2.includes(keyword));
+                        
+                        if (hasKeyword1 && hasKeyword2) {
+                            return true;
+                        }
+                    }
+                    
+                    return false;
+                },
+                
+                getUniqueSitesCount() {
+                    // Usa i prodotti originali per contare i siti reali
+                    if (!this.originalProducts || this.originalProducts.length === 0) return 0;
+                    
+                    const uniqueSites = new Set();
+                    this.originalProducts.forEach(product => {
+                        if (product.source) {
+                            // Estrai il dominio base dalla source
+                            const domain = this.extractDomainFromSource(product.source);
+                            if (domain) {
+                                uniqueSites.add(domain);
+                            }
+                        }
+                    });
+                    
+                    return uniqueSites.size;
+                },
+                
+                extractDomainFromSource(source) {
+                    if (!source) return null;
+                    try {
+                        // Estrai il dominio dalla source (es: "www.unieuro.it" -> "unieuro.it")
+                        const url = source.startsWith('http') ? source : `https://${source}`;
+                        const domain = new URL(url).hostname.replace('www.', '');
+                        return domain;
+                    } catch {
+                        // Se non è un URL valido, usa la source come è
+                        return source.replace('www.', '');
+                    }
+                },
+                
+                getLastUpdateTime() {
+                    if (!this.originalProducts || this.originalProducts.length === 0) return 'N/A';
+                    
+                    // Trova il timestamp più recente dai prodotti
+                    const timestamps = this.originalProducts
+                        .map(p => p.session_id || p.timestamp || p.extracted_at)
+                        .filter(t => t)
+                        .sort()
+                        .reverse();
+                    
+                    if (timestamps.length > 0) {
+                        try {
+                            const timestamp = timestamps[0];
+                            
+                            // Se è un session_id (formato: session_YYYYMMDD_HHMMSS_XXXX)
+                            if (typeof timestamp === 'string' && timestamp.startsWith('session_') && timestamp.includes('_')) {
+                                const parts = timestamp.split('_');
+                                if (parts.length >= 3) {
+                                    const datePart = parts[1]; // YYYYMMDD
+                                    const timePart = parts[2]; // HHMMSS
+                                    
+                                    if (datePart.length === 8 && timePart.length === 6) {
+                                        const year = parseInt(datePart.substring(0, 4));
+                                        const month = parseInt(datePart.substring(4, 6)) - 1; // Mesi sono 0-based
+                                        const day = parseInt(datePart.substring(6, 8));
+                                        const hour = parseInt(timePart.substring(0, 2));
+                                        const minute = parseInt(timePart.substring(2, 4));
+                                        const second = parseInt(timePart.substring(4, 6));
+                                        
+                                        // Verifica che i valori siano validi
+                                        if (year >= 2000 && year <= 2030 && month >= 0 && month <= 11 && 
+                                            day >= 1 && day <= 31 && hour >= 0 && hour <= 23 && 
+                                            minute >= 0 && minute <= 59 && second >= 0 && second <= 59) {
+                                            
+                                            const date = new Date(year, month, day, hour, minute, second);
+                                            if (!isNaN(date.getTime())) {
+                                                return date.toLocaleString('it-IT');
+                                            }
+                                        }
+                                    }
+                                }
+                            } else if (typeof timestamp === 'string' && timestamp.includes('_') && timestamp.length === 15) {
+                                // Formato vecchio: YYYYMMDD_HHMMSS
+                                const [datePart, timePart] = timestamp.split('_');
+                                
+                                if (datePart.length === 8 && timePart.length === 6) {
+                                    const year = parseInt(datePart.substring(0, 4));
+                                    const month = parseInt(datePart.substring(4, 6)) - 1;
+                                    const day = parseInt(datePart.substring(6, 8));
+                                    const hour = parseInt(timePart.substring(0, 2));
+                                    const minute = parseInt(timePart.substring(2, 4));
+                                    const second = parseInt(timePart.substring(4, 6));
+                                    
+                                    if (year >= 2000 && year <= 2030 && month >= 0 && month <= 11 && 
+                                        day >= 1 && day <= 31 && hour >= 0 && hour <= 23 && 
+                                        minute >= 0 && minute <= 59 && second >= 0 && second <= 59) {
+                                        
+                                        const date = new Date(year, month, day, hour, minute, second);
+                                        if (!isNaN(date.getTime())) {
+                                            return date.toLocaleString('it-IT');
+                                        }
+                                    }
+                                }
+                            } else if (typeof timestamp === 'string') {
+                                // Prova a parsare come timestamp normale
+                                const date = new Date(timestamp);
+                                if (!isNaN(date.getTime())) {
+                                    return date.toLocaleString('it-IT');
+                                }
+                            }
+                            
+                            // Se tutto fallisce, mostra il timestamp grezzo
+                            return timestamp.toString();
+                            
+                        } catch (error) {
+                            console.error('Errore parsing timestamp:', error, 'Timestamp:', timestamps[0]);
+                            return timestamps[0].toString();
+                        }
+                    }
+                    
+                    return 'N/A';
+                },
+                getMatchTitle(match) {
+                    if (!match.products || match.products.length === 0) return 'Prodotto Simile';
+                    
+                    // Usa il nome del primo prodotto come titolo principale
+                    const firstProduct = match.products[0];
+                    if (firstProduct.original_name) {
+                        return firstProduct.original_name.substring(0, 50) + (firstProduct.original_name.length > 50 ? '...' : '');
+                    }
+                    
+                    return 'Prodotto Simile';
+                },
+                getPriceDifference(match) {
+                    if (!match.price_statistics || !match.price_statistics.max_price || !match.price_statistics.min_price) return 'N/A';
+                    return (match.price_statistics.max_price - match.price_statistics.min_price).toFixed(2);
+                },
+                getSiteNameFromProduct(product) {
+                    // Prova diversi campi per trovare il nome del sito
+                    const possibleSources = [
+                        product.source,
+                        product.source_url,
+                        product.url,
+                        product.site,
+                        product.raw_data?.source,
+                        product.raw_data?.site
+                    ];
+                    
+                    for (const source of possibleSources) {
+                        if (source && source !== 'Sito' && source !== 'Unknown') {
+                            return this.getSiteName(source);
+                        }
+                    }
+                    
+                    // Se non trova nulla, prova a estrarre dal nome del prodotto
+                    if (product.original_name) {
+                        const sitePatterns = [
+                            /(unieuro|mediaworld|amazon|ebay|trony|euronics)/i,
+                            /(conad|carrefour|esselunga|coop)/i,
+                            /(immobiliare|casa|idealista)/i
+                        ];
+                        
+                        for (const pattern of sitePatterns) {
+                            const match = product.original_name.match(pattern);
+                            if (match) {
+                                return match[1].charAt(0).toUpperCase() + match[1].slice(1);
+                            }
+                        }
+                    }
+                    
+                    return 'Sito Sconosciuto';
+                },
+                loadAllProducts() {
+                    // Carica tutti i prodotti senza limite
+                    console.log('🔄 Caricamento prodotti...');
+                    store.setState({ isLoadingDbProducts: true });
+                    
+                    // Chiama l'API con limite molto alto
+                    api.searchHistoricalProducts({ limit: 10000 })
+                        .then(response => {
+
+                            
+                            if (response.success) {
+
+                                
+                                // Estrai domini disponibili
+                                const domains = this.extractAvailableDomains(response.products || []);
+                                this.availableDomains = domains;
+                                
+                                // IMPORTANTE: Salva i prodotti originali che NON vengono mai modificati
+                                const products = response.products || [];
+                                this.originalProducts = [...products];  // Copia profonda
+                                this.databaseProducts = [...products];  // Copia per visualizzazione
+                                
+                                // Ripristina la selezione dei domini dal localStorage
+                                this.restoreSelectedDomains();
+                                
+                                // Aggiorna il store per la visualizzazione
+                                store.setState({ 
+                                    databaseProducts: products,
+                                    isLoadingDbProducts: false
+                                });
+                                
+                                console.log(`✅ Caricati ${products.length} prodotti da ${domains.length} siti`);
+
+
+
+                                
+                                // Debug: verifica che i prodotti siano salvati correttamente
+                                console.log('🔍 VERIFICA SALVATAGGIO:');
+                                console.log('  - this.originalProducts.length:', this.originalProducts.length);
+                                console.log('  - this.databaseProducts.length:', this.databaseProducts.length);
+                                console.log('  - store.state.databaseProducts.length:', store.state.databaseProducts.length);
+                                
+                                // Debug: verifica che i domini siano estratti correttamente
+                                console.log('🔍 VERIFICA DOMINI:');
+                                console.log('  - Domini estratti:', domains);
+                                console.log('  - Conteggio per dominio:');
+                                domains.forEach(domain => {
+                                    const count = this.getDomainProductCount(domain);
+                                    console.log(`    - ${domain}: ${count} prodotti`);
+                                });
+                                
+                                // Mostra notifica
+                                this.showNotification(`Caricati ${products.length} prodotti da ${domains.length} siti!`, 'success');
+                            } else {
+                                console.error('❌ Errore caricamento prodotti:', response.error);
+                                store.setState({ isLoadingDbProducts: false });
+                                this.showNotification('Errore caricamento: ' + response.error, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('❌ Errore API:', error);
+                            store.setState({ isLoadingDbProducts: false });
+                            this.showNotification('Errore connessione: ' + error.message, 'error');
+                        });
+                },
+
+                clearDomainFilter() {
+                    this.selectedDomain = '';
+                    // Mostra tutti i prodotti originali senza ricaricare
+                    const allProducts = this.originalProducts || [];
+                    this.store.setState({ 
+                        databaseProducts: allProducts
+                    });
+                    console.log('🔄 Filtro dominio resettato, mostrati tutti i prodotti originali:', allProducts.length);
+                    this.showNotification('Filtro resettato, mostrati tutti i prodotti', 'info');
+                },
+                
+                getDomainDisplayName(domain) {
+                    if (!domain) return 'Tutti i Siti';
+                    
+                    // Mappa domini a nomi display
+                    const domainNames = {
+                        'unieuro.it': 'Unieuro',
+                        'www.unieuro.it': 'Unieuro',
+                        'mediaworld.it': 'MediaWorld',
+                        'www.mediaworld.it': 'MediaWorld',
+                        'carrefour.it': 'Carrefour',
+                        'www.carrefour.it': 'Carrefour',
+                        'immobiliare.it': 'Immobiliare',
+                        'www.immobiliare.it': 'Immobiliare',
+                        'tempocasa.it': 'TempoCasa',
+                        'www.tempocasa.it': 'TempoCasa',
+                        'amazon.it': 'Amazon',
+                        'www.amazon.it': 'Amazon',
+                        'ebay.it': 'eBay',
+                        'www.ebay.it': 'eBay'
+                    };
+                    
+                    return domainNames[domain] || domain.replace('www.', '').split('.')[0].charAt(0).toUpperCase() + domain.replace('www.', '').split('.')[0].slice(1);
+                },
+                
+                extractAvailableDomains(products) {
+                    if (!products || products.length === 0) return [];
+                    
+                    const domains = new Set();
+                    products.forEach(product => {
+                        if (product.source) {
+                            // Normalizza il dominio
+                            let domain = product.source.replace('www.', '');
+                            if (domain && domain !== 'Unknown' && domain !== 'N/A') {
+                                domains.add(domain);
+                            }
+                        }
+                    });
+                    
+                    return Array.from(domains).sort();
+                },
+                
+                getDomainProductCount(domain) {
+                    if (!domain || !this.originalProducts) return 0;
+                    
+                    const count = this.originalProducts.filter(product => 
+                        product.source && product.source.includes(domain)
+                    ).length;
+                    
+                    return count;
+                },
+                
+                // Nuovi metodi per il sistema di modalità
+                selectAllDomains() {
+                    this.selectedDomains = [...this.availableDomains];
+                    this.saveSelectedDomains(); // Salva automaticamente
+                    console.log('✅ Selezionati tutti i domini:', this.selectedDomains);
+                },
+                
+                clearSelectedDomains() {
+                    this.selectedDomains = [];
+                    this.saveSelectedDomains(); // Salva automaticamente
+                    console.log('🔄 Domini selezionati resettati');
+                },
+                
+                // Salva la selezione dei domini nel localStorage
+                saveSelectedDomains() {
+                    try {
+                        localStorage.setItem('selectedDomains', JSON.stringify(this.selectedDomains));
+                        console.log('💾 Selezione domini salvata:', this.selectedDomains);
+                    } catch (error) {
+                        console.error('❌ Errore salvataggio selezione domini:', error);
+                    }
+                },
+                
+                // Ripristina la selezione dei domini dal localStorage
+                restoreSelectedDomains() {
+                    try {
+                        const saved = localStorage.getItem('selectedDomains');
+                        if (saved) {
+                            this.selectedDomains = JSON.parse(saved);
+                            console.log('📂 Selezione domini ripristinata:', this.selectedDomains);
+                        }
+                    } catch (error) {
+                        console.error('❌ Errore ripristino selezione domini:', error);
+                        this.selectedDomains = [];
+                    }
+                },
+                
+                // Gestisce il cambio di selezione di un dominio
+                toggleDomainSelection(domain) {
+                    const index = this.selectedDomains.indexOf(domain);
+                    if (index > -1) {
+                        // Rimuovi il dominio se già selezionato
+                        this.selectedDomains.splice(index, 1);
+                        console.log(`❌ Rimosso dominio: ${domain}`);
+                    } else {
+                        // Aggiungi il dominio se non selezionato
+                        this.selectedDomains.push(domain);
+                        console.log(`✅ Aggiunto dominio: ${domain}`);
+                    }
+                    
+                    // Salva immediatamente la selezione
+                    this.saveSelectedDomains();
+                    
+                    console.log('🎯 Domini selezionati aggiornati:', this.selectedDomains);
+                },
+                
+                getComparisonModeDescription() {
+                    // PROTEZIONE: Assicurati che selectedDomains sia sempre un array
+                    if (!Array.isArray(this.selectedDomains)) {
+                        console.warn('⚠️ selectedDomains non è un array, resetto a array vuoto:', this.selectedDomains);
+                        this.selectedDomains = [];
+                    }
+                    
+                    if (this.comparisonMode === 'all') {
+                        return `Confronterai tutti i ${this.originalProducts.length || 0} prodotti di tutti i siti`;
+                    } else {
+                        if (this.selectedDomains.length === 0) {
+                            return 'Seleziona 2+ domini da confrontare';
+                        } else if (this.selectedDomains.length === 1) {
+                            return `Seleziona almeno un altro dominio per confrontare con ${this.getDomainDisplayName(this.selectedDomains[0])}`;
+                        } else {
+                            return `Confronterai ${this.selectedDomains.length} domini: ${this.selectedDomains.map(d => this.getDomainDisplayName(d)).join(' + ')}`;
+                        }
+                    }
+                },
+                
+                getComparisonButtonDescription() {
+                    // PROTEZIONE: Assicurati che selectedDomains sia sempre un array
+                    if (!Array.isArray(this.selectedDomains)) {
+                        console.warn('⚠️ selectedDomains non è un array, resetto a array vuoto:', this.selectedDomains);
+                        this.selectedDomains = [];
+                    }
+                    
+                    if (this.comparisonMode === 'all') {
+                        return 'Confronta tutti i prodotti di tutti i siti';
+                    } else {
+                        if (this.selectedDomains.length < 2) {
+                            return 'Seleziona 2+ domini per confrontare';
+                        } else {
+                            return `Confronta ${this.selectedDomains.map(d => this.getDomainDisplayName(d)).join(' + ')}`;
+                        }
+                    }
+                },
+                
+                hasProductsToCompare() {
+                    // PROTEZIONE: Assicurati che selectedDomains sia sempre un array
+                    if (!Array.isArray(this.selectedDomains)) {
+                        console.warn('⚠️ selectedDomains non è un array, resetto a array vuoto:', this.selectedDomains);
+                        this.selectedDomains = [];
+                    }
+                    
+                    if (this.comparisonMode === 'all') {
+                        // Modalità "Tutti i Prodotti": controlla se ci sono abbastanza prodotti totali
+                        const totalProducts = this.originalProducts || [];
+                        if (totalProducts.length < 2) {
+                            console.log('❌ Non ci sono abbastanza prodotti totali per confrontare:', totalProducts.length);
+                            return false;
+                        }
+                        console.log('✅ Prodotti sufficienti per confronto totale:', totalProducts.length);
+                        return true;
+                    } else {
+                        // Modalità "Domini Specifici": controlla se sono selezionati abbastanza domini
+                        if (this.selectedDomains.length < 2) {
+                            console.log('❌ Seleziona almeno 2 domini per confrontare');
+                            return false;
+                        }
+                        
+                        // Controlla se ci sono prodotti per ogni dominio selezionato
+                        for (const domain of this.selectedDomains) {
+                            const domainProducts = this.originalProducts.filter(product => 
+                                product.source && product.source.includes(domain)
+                            );
+                            if (domainProducts.length === 0) {
+                                console.log(`❌ Nessun prodotto trovato per ${this.getDomainDisplayName(domain)}`);
+                                return false;
+                            }
+                        }
+                        
+                        console.log(`✅ Domini selezionati validi per confronto: ${this.selectedDomains.join(', ')}`);
+                        return true;
+                    }
+                },
+                
+                formatDate(sessionId) {
+                    if (!sessionId) return 'N/A';
+                    
+                    try {
+                        // Estrai la data dal session_id (formato: session_YYYYMMDD_HHMMSS_XXXX)
+                        const dateMatch = sessionId.match(/session_(\d{8})_(\d{6})/);
+                        if (dateMatch) {
+                            const dateStr = dateMatch[1] + dateMatch[2];
+                            const date = new Date(
+                                dateStr.substring(0, 4),
+                                dateStr.substring(4, 6) - 1,
+                                dateStr.substring(6, 8),
+                                dateStr.substring(8, 10),
+                                dateStr.substring(10, 12),
+                                dateStr.substring(12, 14)
+                            );
+                            return date.toLocaleDateString('it-IT');
+                        }
+                        return 'N/A';
+                    } catch {
+                        return 'N/A';
+                    }
+                },
+                
+                filterByDomain() {
+                    if (!this.selectedDomain) {
+                        // Se nessun dominio selezionato, mostra tutti i prodotti originali
+                        const allProducts = this.originalProducts || [];
+                        this.store.setState({ 
+                            databaseProducts: allProducts
+                        });
+                        console.log('🔄 Mostrati tutti i prodotti:', allProducts.length);
+                        this.showNotification(`Mostrati tutti i ${allProducts.length} prodotti`, 'info');
+                        return;
+                    }
+                    
+                    console.log('🔍 Filtro per dominio:', this.selectedDomain);
+                    
+                    // IMPORTANTE: Usa SEMPRE i prodotti originali per il filtro
+                    const allProducts = this.originalProducts || [];
+                    if (allProducts.length > 0) {
+                        const filteredProducts = allProducts.filter(product => {
+                            return product.source && product.source.includes(this.selectedDomain);
+                        });
+                        
+                        // Aggiorna solo la visualizzazione, mantieni i prodotti originali
+                        this.store.setState({ 
+                            databaseProducts: filteredProducts
+                        });
+                        
+                        console.log(`🔍 Filtro completato: ${filteredProducts.length} prodotti per ${this.selectedDomain}`);
+                        console.log(`📦 Prodotti originali mantenuti: ${allProducts.length}`);
+                        this.showNotification(`Filtrati ${filteredProducts.length} prodotti per ${this.selectedDomain}`, 'success');
+                    } else {
+                        console.log('❌ Nessun prodotto disponibile per filtrare');
+                        this.showNotification('Nessun prodotto disponibile per filtrare', 'warning');
+                    }
+                },
+                
+                loadProductsByDomain(domain) {
+                    console.log('🔄 Caricamento prodotti per dominio:', domain);
+                    this.store.setState({ isLoadingDbProducts: true });
+                    
+                    // Chiama l'API con filtro per dominio
+                    api.searchHistoricalProducts({ 
+                        limit: 10000,
+                        domain: domain 
+                    })
+                    .then(response => {
+                        if (response.success) {
+                            const filteredProducts = response.products.filter(product => 
+                                product.source && product.source.includes(domain)
+                            );
+                            
+                            this.store.setState({ 
+                                databaseProducts: filteredProducts,
+                                isLoadingDbProducts: false
+                            });
+                            
+                            this.showNotification(`Caricati ${filteredProducts.length} prodotti per ${domain}`, 'success');
+                        } else {
+                            this.store.setState({ isLoadingDbProducts: false });
+                            this.showNotification('Errore caricamento: ' + response.error, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ Errore API:', error);
+                        this.store.setState({ isLoadingDbProducts: false });
+                        this.showNotification('Errore connessione: ' + error.message, 'error');
+                    });
+                },
+                stopGenericScraping() {
+                    actions.stopGenericScraping();
+                },
+                
+
+                
+                // Metodo per forzare l'aggiornamento della dashboard quando l'utente clicca
+                async forceDashboardUpdate() {
+                    console.log('🖱️ CLICK sulla dashboard - Forzando aggiornamento...');
+                    
+                    try {
+                        if (window.actions && typeof window.actions.forceDashboardUpdate === 'function') {
+                            await window.actions.forceDashboardUpdate();
+                            this.showNotification('Dashboard aggiornata con successo!', 'success');
+                        } else {
+                            // Fallback diretto
+                            if (window.chartManager && typeof window.chartManager.updateAllCharts === 'function') {
+                                await window.chartManager.updateAllCharts();
+                                this.showNotification('Grafici aggiornati con successo!', 'success');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('❌ Errore aggiornamento dashboard:', error);
+                        this.showNotification('Errore aggiornamento dashboard', 'error');
+                    }
+                },
+                
+                // Metodi semplificati per la gestione dei grafici
+                async initializeCharts() {
+                    try {
+                        if (window.chartManager && typeof window.chartManager.initializeCharts === 'function') {
+                            await window.chartManager.initializeCharts();
+                            this.chartsInitialized = true;
+                            console.log('✅ Grafici inizializzati con successo');
+                        } else {
+                            console.warn('⚠️ ChartManager non disponibile');
+                        }
+                    } catch (error) {
+                        console.error('❌ Errore inizializzazione grafici:', error);
+                    }
+                },
+                
+                // Carica modelli AI e dati monitoring
+                loadAIModelsAndMonitoring() {
+                    try {
+                        if (typeof store.loadAvailableAIModels === 'function') {
+                            store.loadAvailableAIModels();
+                        }
+                        
+                        if (typeof store.loadMonitoredProducts === 'function') {
+                            store.loadMonitoredProducts();
+                        }
+                        
+                        if (typeof store.loadPriceAlerts === 'function') {
+                            store.loadPriceAlerts();
+                        }
+                        
+                        if (typeof store.loadMonitoringStats === 'function') {
+                            store.loadMonitoringStats();
+                        }
+                        
+                        if (typeof store.loadSchedulerStats === 'function') {
+                            store.loadSchedulerStats();
+                        }
+                        
+                        console.log('✅ Modelli AI e dati monitoring caricati');
+                    } catch (error) {
+                        console.error('❌ Errore caricamento modelli AI e monitoring:', error);
+                    }
+                },
+                
+                // Aggiorna grafici dopo caricamento dati
+                async updateChartsAfterDataLoad() {
+                    try {
+                        if (window.actions && typeof window.actions.updateCharts === 'function') {
+                            await window.actions.updateCharts();
+                            console.log('✅ Grafici aggiornati dopo caricamento dati');
+                        }
+                    } catch (error) {
+                        console.error('❌ Errore aggiornamento grafici dopo caricamento dati:', error);
+                    }
+                },
+                
+
+            },
+            
+            mounted() {
+                console.log('🚀 Vue app montata, inizializzazione...');
+                
+                // Sottoscrivi ai cambiamenti dello store
+                store.subscribe((newState) => {
+                    Object.assign(this, newState);
+                });
+                
+                // Inizializza le nuove proprietà per il sistema di confronto
+                this.originalProducts = [];
+                this.comparisonMode = 'all';
+                this.selectedDomains = [];
+                
+                // Ripristina la selezione dei domini dal localStorage
+                this.restoreSelectedDomains();
+                
+                // Inizializza
+                this.updateTime();
+                setInterval(() => {
+                    store.updateTime();
+                }, 1000);
+                
+                // Inizializza i grafici
+                this.$nextTick(() => {
+                    setTimeout(() => {
+                        this.initializeCharts();
+                    }, 1000);
+                });
+                
+                // Aggiungi listener per il resize
+                window.addEventListener('resize', this.handleResize);
+                
+                // Carica modelli AI e dati monitoring
+                this.loadAIModelsAndMonitoring();
+                
+                // Auto-refresh dashboard
+                setInterval(() => {
+                    if (window.actions && typeof window.actions.refreshDashboardData === 'function') {
+                        actions.refreshDashboardData();
+                    }
+                }, CONFIG.UI.AUTO_REFRESH_INTERVAL);
+                
+                // Aggiornamento grafici dopo caricamento dati
+                setTimeout(() => {
+                    this.updateChartsAfterDataLoad();
+                }, 3000);
+                
+                // Carica configurazione browser
+                this.loadBrowserConfig();
+                
+                // Configura listener per aggiornamento automatico dashboard
+                // this.setupDashboardRefreshListener(); // Rimosso per evitare errori
+                
+                console.log('✅ Vue app inizializzata completamente');
+            },
+            
+            beforeUnmount() {
+                window.removeEventListener('resize', this.handleResize);
+                chartManager.destroyAllCharts();
+            },
+            
+            watch: {
+                activeSection(newSection) {
+                    if (newSection === 'dashboard') {
+                        this.$nextTick(() => {
+                            setTimeout(() => {
+                                if (window.chartManager && typeof window.chartManager.forceDashboardUpdate === 'function') {
+                                    window.chartManager.forceDashboardUpdate();
+                                } else if (window.chartManager && typeof window.chartManager.updateAllCharts === 'function') {
+                                    window.chartManager.updateAllCharts();
+                                }
+                            }, 500);
+                        });
+                    }
+                },
+                
+                // Watcher per il cambio di modalità di confronto
+                comparisonMode(newMode, oldMode) {
+                    if (newMode !== oldMode) {
+                        console.log(`🔄 Cambio modalità confronto: ${oldMode} → ${newMode}`);
+                        
+                        if (newMode === 'specific') {
+                            // Quando si passa alla modalità specifica, ripristina la selezione
+                            this.restoreSelectedDomains();
+                            console.log('📂 Selezione domini ripristinata per modalità specifica');
+                        } else if (newMode === 'all') {
+                            // Quando si passa alla modalità "tutti", salva la selezione attuale
+                            this.saveSelectedDomains();
+                            console.log('💾 Selezione domini salvata prima del cambio modalità');
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Rendi lo store disponibile globalmente
+        app.config.globalProperties.store = store;
+        
+        app.mount('#app');
+        </script>
+    </body>
+    </html>
+    </html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Minimo Chart.js</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>Test Minimo Chart.js</h1>
+    
+    <div style="width: 400px; height: 300px;">
+        <canvas id="myChart"></canvas>
+    </div>
+    
+    <button onclick="updateChart()">Aggiorna Dati</button>
+    
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu'],
+                datasets: [{
+                    label: 'Vendite 2024',
+                    data: [12, 19, 3, 5, 2, 3],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        function updateChart() {
+            const newData = chart.data.datasets[0].data.map(() => Math.floor(Math.random() * 20));
+            chart.data.datasets[0].data = newData;
+            chart.update();
+            console.log('Grafico aggiornato con nuovi dati:', newData);
+        }
+        
+        console.log('Chart.js caricato:', Chart.version);
+        console.log('Grafico creato:', chart);
+    </script>
+</body>
+</html>
+
+
+

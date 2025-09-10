@@ -1,0 +1,160 @@
+{
+  "www.unieuro.it": {
+    "domain": "www.unieuro.it",
+    "selectors": {
+      "product_container": "ion-grid.product-wrapper"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-07-24T14:05:05.746954",
+    "products_found": 30,
+    "success_rate": 0.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "sephora": {
+    "domain": "sephora",
+    "selectors": {
+      "product_container": "div:has([class*='product'])",
+      "title": "div:has([class*='product'])",
+      "price": "div:has([class*='product'])"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-07-31T00:32:27.696800",
+    "products_found": 64,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "carrefour": {
+    "domain": "carrefour",
+    "selectors": {
+      "product_container": "div:has([class*='product'])",
+      "title": "div:has([class*='product'])",
+      "price": "div:has([class*='product'])"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T16:09:00.804470",
+    "products_found": 86,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "euronics": {
+    "domain": "euronics",
+    "selectors": {
+      "product_container": ".product",
+      "title": ".product",
+      "price": ".product"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-01T20:10:12.003071",
+    "products_found": 48,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "amazon": {
+    "domain": "amazon",
+    "selectors": {
+      "product_container": "[class*='block']",
+      "title": "[class*='block']",
+      "price": "[class*='block']"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T13:11:56.226605",
+    "products_found": 686,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "tempocasa": {
+    "domain": "tempocasa",
+    "selectors": {
+      "product_container": "[class*='card']",
+      "title": "[class*='card']",
+      "price": "[class*='card']"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T13:01:23.047791",
+    "products_found": 73,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "immobiliare": {
+    "domain": "immobiliare",
+    "selectors": {
+      "product_container": "li",
+      "title": "li",
+      "price": "li"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-01T21:15:33.740240",
+    "products_found": 55,
+    "success_rate": 0.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "unieuro": {
+    "domain": "unieuro",
+    "selectors": {
+      "product_container": "[class*='row']",
+      "title": "[class*='row']",
+      "price": "[class*='row']"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T16:06:37.436155",
+    "products_found": 26,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "spesaonline": {
+    "domain": "spesaonline",
+    "selectors": {
+      "product_container": "*:has(.price)",
+      "title": "*:has(.price)",
+      "price": "*:has(.price)"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T16:10:38.965968",
+    "products_found": 445,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  },
+  "mediaworld": {
+    "domain": "mediaworld",
+    "selectors": {
+      "product_container": "article",
+      "title": "article",
+      "price": "article"
+    },
+    "approved": false,
+    "approved_by": null,
+    "approved_at": null,
+    "suggested_at": "2025-08-22T16:07:48.366975",
+    "products_found": 18,
+    "success_rate": 1.0,
+    "last_used": null,
+    "usage_count": 0
+  }
+}
