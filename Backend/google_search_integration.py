@@ -1048,25 +1048,37 @@ class GoogleSearchIntegration:
 
             results = []
 
-            # Lista siti e-commerce da provare
+            # Lista siti e-commerce da provare (espansa)
             ecommerce_sites = [
                 {
                     'name': 'Amazon',
                     'url': f'https://www.amazon.it/s?k={quote_plus(query)}',
-                    'search_selector': 'h2 a[href*="/dp/"]',
-                    'price_selector': 'span.a-price-whole'
+                    'search_selector': 'h2 a[href*="/dp/"], [data-component-type="s-search-result"]',
+                    'price_selector': 'span.a-price-whole, .a-price-range'
                 },
                 {
                     'name': 'MediaWorld',
                     'url': f'https://www.mediaworld.it/search?q={quote_plus(query)}',
-                    'search_selector': 'a[href*="/p/"]',
-                    'price_selector': '.price'
+                    'search_selector': 'a[href*="/p/"], .product-item',
+                    'price_selector': '.price, .current-price'
                 },
                 {
                     'name': 'Unieuro',
                     'url': f'https://www.unieuro.it/search?q={quote_plus(query)}',
-                    'search_selector': 'a[href*="/p/"]',
-                    'price_selector': '.price'
+                    'search_selector': 'a[href*="/p/"], .product-item',
+                    'price_selector': '.price, .current-price'
+                },
+                {
+                    'name': 'Euronics',
+                    'url': f'https://www.euronics.it/search?q={quote_plus(query)}',
+                    'search_selector': 'a[href*="/p/"], .product-item',
+                    'price_selector': '.price, .current-price'
+                },
+                {
+                    'name': 'Trony',
+                    'url': f'https://www.trony.it/search?q={quote_plus(query)}',
+                    'search_selector': 'a[href*="/p/"], .product-item',
+                    'price_selector': '.price, .current-price'
                 }
             ]
 
