@@ -217,9 +217,13 @@ class _ProvidersMixin:
 
                 "generationConfig": {
 
-                "temperature": 0.1,
+                    "temperature": 0.1,
 
-                    "maxOutputTokens": 4096
+                    # JSON mode: Gemini restituisce JSON puro (niente ```json/prosa)
+                    "responseMimeType": "application/json",
+
+                    # Alzato per evitare troncamenti su pagine con molti prodotti
+                    "maxOutputTokens": 8192
 
                 }
 
@@ -244,6 +248,12 @@ class _ProvidersMixin:
                 print(f"🤖 Gemini Response: {ai_response[:200]}...")
 
                 parsed_result = self._extract_json_from_response(ai_response)
+
+                if not parsed_result:
+
+                    print(f"❌ Gemini: risposta non parsabile come JSON")
+
+                    return None
 
                 if (
 
