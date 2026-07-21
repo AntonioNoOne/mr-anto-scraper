@@ -6,12 +6,9 @@ services:
     plan: free
     buildCommand: ""
     startCommand: "cd Backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
     envVars:
       - key: OPENAI_API_KEY
         sync: false
       - key: GEMINI_API_KEY
-        sync: false
-      - key: BROWSERBASE_API_KEY
-        sync: false
-      - key: BROWSERBASE_PROJECT_ID
         sync: false

@@ -1,0 +1,21 @@
+name: Keep Render awake
+
+# Render free tier sospende il servizio dopo ~15 min di inattività (cold start ~30-50s).
+# Questo cron pinga /health per tenerlo sveglio. GitHub disabilita i cron dopo 60 giorni
+# di inattività del repo: basta un commit per riattivarlo.
+
+on:
+  schedule:
+    - cron: "*/14 * * * *"   # ogni 14 minuti
+  workflow_dispatch:          # avvio manuale dalla tab Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health endpoint
+        run: |
+          echo "Ping $(date -u)"
+          code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" https://mr-anto-scraper.onrender.com/health)
+          echo "HTTP $code"
+          test "$code" = "200"

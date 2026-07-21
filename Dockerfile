@@ -1,29 +1,23 @@
-# Usa Python 3.11 con Playwright preinstallato
-FROM mcr.microsoft.com/playwright/python:v1.55.0-jammy
+# Immagine Playwright + Python. La versione del tag DEVE combaciare con il pin
+# di playwright in requirements.txt (>=1.61,<2.0) per allineare i binari del browser.
+FROM mcr.microsoft.com/playwright/python:v1.61.0-noble
 
-# Imposta la directory di lavoro
 WORKDIR /app
 
-# Copia i file di requirements
+# Dipendenze: gestite in un unico requirements.txt alla root
 COPY requirements.txt .
-COPY Backend/requirements.txt Backend/
-
-# Installa le dipendenze Python
 RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir -r Backend/requirements.txt
 
-# I browser Playwright sono già installati nell'immagine base
-# RUN playwright install chromium
+# Assicura che i browser combacino con la versione di playwright installata da pip
+RUN playwright install --with-deps chromium
 
-# Copia il codice dell'applicazione
+# Codice applicazione
 COPY . .
 
-# Esponi la porta
-EXPOSE 8000
-
-# Inizializza selettori predefiniti
+# Inizializza i selettori predefiniti
 WORKDIR /app/Backend
 RUN python init_selectors.py
 
-# Comando di avvio
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Render inietta $PORT; fallback 8000 in locale. Shell form per espandere la variabile.
+EXPOSE 8000
+CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}

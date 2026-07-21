@@ -1,13 +1,2 @@
-fastapi>=0.100.0
-uvicorn[standard]>=0.20.0
-pydantic>=2.0.0
-requests>=2.30.0
-beautifulsoup4>=4.12.0
-playwright>=1.40.0
-python-multipart>=0.0.6
-aiofiles>=23.0.0
-python-dotenv>=1.0.0
-aiohttp>=3.8.0
-googlesearch-python>=1.3.0
-openai>=1.0.0
-Pillow>=9.0.0
+# Dipendenze gestite in un unico file alla root del repo.
+-r ../requirements.txt

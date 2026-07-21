@@ -4,6 +4,14 @@ Main API Server per MR Scraper
 Integra il fast_ai_extractor ottimizzato con l'UI
 """
 
+# Forza UTF-8 su stdout/stderr: evita crash 'charmap' su console Windows (cp1252)
+# quando il codice stampa emoji. No-op se lo stream non supporta reconfigure.
+import sys
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
 
 from fastapi import FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse

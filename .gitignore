@@ -23,6 +23,7 @@ MANIFEST
 
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
 env.bak/
@@ -97,3 +98,6 @@ yarn-error.log*
 Backend/llm_scraper_scripts/
 *.ts
 !Backend/package.json 
+# File di configurazione locale con secret (usa env.local.example come template)
+Backend/env.local
+env.local
