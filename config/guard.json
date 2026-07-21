@@ -1,0 +1,69 @@
+{
+  "file_length": {
+    "warn_lines": 800,
+    "max_lines": 1000,
+    "mode": "block",
+    "extensions": [".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".cpp", ".cs"],
+    "exclude_dirs": [
+      ".cache",
+      ".git",
+      ".mypy_cache",
+      ".pytest_cache",
+      ".ruff_cache",
+      ".tmp",
+      ".venv",
+      "__pycache__",
+      "build",
+      "dist",
+      "node_modules",
+      "tmp"
+    ],
+    "exclude_globs": [
+      "**/*.generated.*",
+      "**/*.min.js",
+      "**/*.bundle.js",
+      "**/migrations/*",
+      "Backend/backups/**",
+      "data/**"
+    ]
+  },
+  "required_files": [
+    "AGENTS.md",
+    "docs/AI_ASSISTANT_WORKSPACE.md",
+    "docs/PROJECT_GUARD.md",
+    "scripts/README.md",
+    "scripts/check_file_length.py",
+    "scripts/project_guard.py",
+    "scripts/write_checkpoint.py",
+    "scripts/agent_start.py",
+    "scripts/agent_finish.py",
+    "checkpoint.md",
+    "agent.md"
+  ],
+  "required_sections": {
+    "AGENTS.md": ["## File Length Guard", "## Checkpoint And Journal"],
+    "docs/AI_ASSISTANT_WORKSPACE.md": ["## Start Checklist", "## Closeout Checklist"],
+    "docs/PROJECT_GUARD.md": ["## Guard Policy", "## Hook Setup"]
+  },
+  "scripts": {
+    "readme": "scripts/README.md",
+    "scan_dirs": ["scripts"],
+    "extensions": [".py", ".ps1", ".sh", ".bat"],
+    "required_documented": [
+      "scripts/check_file_length.py",
+      "scripts/project_guard.py",
+      "scripts/write_checkpoint.py",
+      "scripts/agent_start.py",
+      "scripts/agent_finish.py"
+    ],
+    "warn_undocumented": true
+  },
+  "checkpoint": {
+    "latest": "checkpoint.md",
+    "journal": "agent.md",
+    "current": "docs/status/current.md",
+    "last_checkpoint": "docs/status/last-checkpoint.md",
+    "archive_dir": "docs/archive/checkpoints",
+    "journal_entries": 30
+  }
+}

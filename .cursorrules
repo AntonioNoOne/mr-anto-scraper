@@ -1,0 +1,12 @@
+Project guard rules for Cursor:
+
+- Read `AGENTS.md` and `docs/AI_ASSISTANT_WORKSPACE.md` before editing.
+- **Before proposing any approach, read `docs/memory/02_failed_graveyard.md`.** If the approach is listed there, do not propose it.
+- At the start of an agent work session, run `python scripts/agent_start.py`.
+- Run `python scripts/project_guard.py --report-only` before substantial work.
+- Run `python scripts/check_file_length.py` before commit/push.
+- Keep files below the configured thresholds in `config/guard.json`.
+- If a file is too long, extract behavior into a focused module.
+- Close important changes with `python scripts/agent_finish.py --title "..." --summary "..."`
+- After a macro-task completes, log it: `apg log --success -m "..."` or `apg log --fail -m "..."`.
+- Do not put API keys, tokens or customer secrets in checkpoint/journal files.

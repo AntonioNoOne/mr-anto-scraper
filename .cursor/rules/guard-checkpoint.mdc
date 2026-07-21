@@ -1,0 +1,23 @@
+---
+description: Guard/checkpoint workflow for this repository
+alwaysApply: true
+---
+
+# Guard And Checkpoint Workflow
+
+- Read `AGENTS.md` before modifying source code.
+- At session start, run `python scripts/agent_start.py` and use its output as
+  the current project handoff.
+- Use `python scripts/project_guard.py --report-only` before substantial edits.
+- Use `python scripts/check_file_length.py` before commit/push.
+- Do not add new logic to files over the hard limit in `config/guard.json`.
+- Prefer extraction into small modules when files pass the warning threshold.
+- Keep `checkpoint.md`, `agent.md` and `docs/status/current.md` aligned via:
+
+At session finish, run:
+
+```bash
+python scripts/agent_finish.py --title "short title" --summary "what changed" --next "next action"
+```
+
+- Never write secrets, API keys or private customer data into checkpoints.
