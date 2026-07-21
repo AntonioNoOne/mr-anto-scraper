@@ -7,7 +7,7 @@
     <!-- Asset self-hosted (nessuna CDN): Tailwind buildato+purgato, poi override custom -->
     <link href="/static/css/tailwind.build.css?v=2" rel="stylesheet">
     <link href="/static/vendor/fontawesome/css/all.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css?v=2" rel="stylesheet">
+    <link href="/static/css/styles.css?v=3" rel="stylesheet">
     <script src="/static/vendor/vue.global.prod.js"></script>
     <script src="/static/vendor/axios.min.js"></script>
     <script src="/static/vendor/chart.umd.js"></script>
@@ -53,25 +53,13 @@
                     <i class="fas fa-chart-pie w-5"></i>
                     <span>Dashboard</span>
                 </div>
-                <div class="nav-item" :class="{ active: activeSection === 'scraping' }" @click="setActiveSection('scraping')">
-                    <i class="fas fa-globe w-5"></i>
-                    <span>Scraping Generico</span>
+                <div class="nav-item" :class="{ active: activeSection === 'estrazione' }" @click="setActiveSection('estrazione')">
+                    <i class="fas fa-magnifying-glass-chart w-5"></i>
+                    <span>Estrazione</span>
                 </div>
-                <div class="nav-item" :class="{ active: activeSection === 'comparison' }" @click="setActiveSection('comparison')">
-                    <i class="fas fa-balance-scale w-5"></i>
-                    <span>Confronto Prodotti</span>
-                </div>
-                <div class="nav-item" :class="{ active: activeSection === 'google-search' }" @click="setActiveSection('google-search')">
-                    <i class="fab fa-google w-5"></i>
-                    <span>Google Search</span>
-                </div>
-                <div class="nav-item" :class="{ active: activeSection === 'scheduling' }" @click="setActiveSection('scheduling')">
-                    <i class="fas fa-clock w-5"></i>
-                    <span>Scheduling</span>
-                </div>
-                <div class="nav-item" :class="{ active: activeSection === 'system-config' }" @click="setActiveSection('system-config')">
-                    <i class="fas fa-cog w-5"></i>
-                    <span>Configurazione</span>
+                <div class="nav-item" :class="{ active: activeSection === 'impostazioni' }" @click="setActiveSection('impostazioni')">
+                    <i class="fas fa-sliders w-5"></i>
+                    <span>Impostazioni &amp; Monitoraggio</span>
                 </div>
             </nav>
 
@@ -109,6 +97,30 @@
 
                 <!-- Content Area -->
                 <div class="p-6 flex-1 overflow-y-auto">
+
+                <!-- Sotto-tab: Estrazione -->
+                <div v-if="activeSection === 'estrazione'" class="subtab-bar">
+                    <button class="subtab" :class="{ active: activeTab === 'scraping' }" @click="setActiveTab('scraping')">
+                        <i class="fas fa-globe"></i><span>Scraping URL</span>
+                    </button>
+                    <button class="subtab" :class="{ active: activeTab === 'google-search' }" @click="setActiveTab('google-search')">
+                        <i class="fab fa-google"></i><span>Ricerca Google</span>
+                    </button>
+                    <button class="subtab" :class="{ active: activeTab === 'comparison' }" @click="setActiveTab('comparison')">
+                        <i class="fas fa-balance-scale"></i><span>Confronto</span>
+                    </button>
+                </div>
+
+                <!-- Sotto-tab: Impostazioni & Monitoraggio -->
+                <div v-if="activeSection === 'impostazioni'" class="subtab-bar">
+                    <button class="subtab" :class="{ active: activeTab === 'scheduling' }" @click="setActiveTab('scheduling')">
+                        <i class="fas fa-clock"></i><span>Monitoraggio</span>
+                    </button>
+                    <button class="subtab" :class="{ active: activeTab === 'config' }" @click="setActiveTab('config')">
+                        <i class="fas fa-cog"></i><span>Configurazione</span>
+                    </button>
+                </div>
+
                 <!-- Dashboard Section -->
                 <div v-if="activeSection === 'dashboard'" class="fade-in content-section" @click="forceDashboardUpdate">
                     <div class="stats-grid mb-8">
@@ -243,7 +255,7 @@
                             </div>
 
                 <!-- Scraping Section -->
-                <div v-if="activeSection === 'scraping'" class="fade-in content-section">
+                <div v-if="activeSection === 'estrazione' && activeTab === 'scraping'" class="fade-in content-section">
                     <div class="glass-card p-6">
                         <h3 class="text-lg font-semibold mb-4">Scraping Generico - Sistema AI Ottimizzato</h3>
                         
@@ -450,7 +462,7 @@
                 </div>
 
                 <!-- Comparison Section -->
-                <div v-if="activeSection === 'comparison'" class="fade-in content-section">
+                <div v-if="activeSection === 'estrazione' && activeTab === 'comparison'" class="fade-in content-section">
                     <div class="glass-card p-6">
                                                     <h3 class="text-lg font-semibold mb-4"><i class="fas fa-balance-scale text-gray-400 mr-2"></i>Confronto Prodotti - Trova i Migliori Deal</h3>
                         
@@ -760,7 +772,7 @@
                 </div>
 
                 <!-- System Configuration Section -->
-                <div v-if="activeSection === 'system-config'" class="fade-in content-section">
+                <div v-if="activeSection === 'impostazioni' && activeTab === 'config'" class="fade-in content-section">
                     <div class="glass-card p-6">
                         <h3 class="text-lg font-semibold mb-4"><i class="fas fa-cog text-gray-400 mr-2"></i>Configurazione Sistema - Controllo Browser e Anti-Bot</h3>
                         
@@ -919,7 +931,7 @@
                 </div>
 
                 <!-- Google Search Section -->
-                <div v-if="activeSection === 'google-search'" class="fade-in content-section">
+                <div v-if="activeSection === 'estrazione' && activeTab === 'google-search'" class="fade-in content-section">
                     <div class="glass-card p-6">
                         <h3 class="text-lg font-semibold mb-4">Google Search - Trova Venditori Alternativi</h3>
                         
@@ -1133,7 +1145,7 @@
                                             </div>
 
                 <!-- Scheduling Section -->
-                <div v-if="activeSection === 'scheduling'" class="fade-in content-section">
+                <div v-if="activeSection === 'impostazioni' && activeTab === 'scheduling'" class="fade-in content-section">
                     <div class="glass-card p-6">
                         <h3 class="text-lg font-semibold mb-4"><i class="fas fa-clock text-gray-400 mr-2"></i>Scheduling & Monitoring - Tieni Sotto Controllo i Prezzi</h3>
                         
@@ -1427,6 +1439,8 @@
                 return {
                     // Usa lo store globale con valori di default sicuri
                     activeSection: initialState.activeSection || 'dashboard',
+                    // Sotto-tab dei gruppi consolidati (Estrazione / Impostazioni)
+                    activeTab: 'scraping',
                     chatSidebarOpen: initialState.chatSidebarOpen || false,
                     // Flag per tracciare l'inizializzazione dei grafici
                     chartsInitialized: false,
@@ -1483,7 +1497,26 @@
             methods: {
                 // Metodi di navigazione
                 setActiveSection(section) {
-                    store.setActiveSection(section);
+                    // Modello consolidato: 3 gruppi (dashboard, estrazione, impostazioni)
+                    // con sotto-tab. Mappa anche i vecchi valori così i link interni
+                    // esistenti continuano a funzionare.
+                    const map = {
+                        'dashboard':     ['dashboard', null],
+                        'estrazione':    ['estrazione', 'scraping'],
+                        'scraping':      ['estrazione', 'scraping'],
+                        'google-search': ['estrazione', 'google-search'],
+                        'comparison':    ['estrazione', 'comparison'],
+                        'impostazioni':  ['impostazioni', 'scheduling'],
+                        'scheduling':    ['impostazioni', 'scheduling'],
+                        'system-config': ['impostazioni', 'config'],
+                    };
+                    const [group, tab] = map[section] || ['dashboard', null];
+                    if (tab) this.activeTab = tab;
+                    store.setActiveSection(group);
+                },
+
+                setActiveTab(tab) {
+                    this.activeTab = tab;
                 },
                 
                 toggleChatSidebar() {
@@ -1493,11 +1526,8 @@
                 getSectionTitle() {
                     const titles = {
                         'dashboard': 'Dashboard',
-                        'scraping': 'Scraping Generico',
-                        'comparison': 'Confronto Prodotti',
-                        'google-search': 'Google Search',
-                        'scheduling': 'Scheduling & Monitoring',
-                        'system-config': 'Configurazione Sistema'
+                        'estrazione': 'Estrazione',
+                        'impostazioni': 'Impostazioni & Monitoraggio'
                     };
                     return titles[this.activeSection] || 'Jusper';
                 },
@@ -1505,11 +1535,8 @@
                 getSectionDescription() {
                     const descriptions = {
                         'dashboard': 'Panoramica completa del sistema e statistiche in tempo reale',
-                        'scraping': 'Scraping generico avanzato con sistema AI per estrazione prodotti',
-                        'comparison': 'Confronto intelligente di prodotti tra diversi siti e calcolo risparmi',
-                        'google-search': 'Ricerca venditori alternativi tramite Google Shopping e DuckDuckGo',
-                        'scheduling': 'Scheduling e monitoring automatico dei prezzi con notifiche',
-                        'system-config': 'Configurazione avanzata del sistema, controllo browser e impostazioni anti-bot'
+                        'estrazione': 'Scraping da URL, ricerca venditori e confronto prezzi con AI',
+                        'impostazioni': 'Monitoraggio prezzi, scheduling automatico e configurazione sistema'
                     };
                     return descriptions[this.activeSection] || 'Benvenuto in Jusper';
                 },

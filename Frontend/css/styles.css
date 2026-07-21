@@ -764,3 +764,91 @@ input:checked + .toggle-slider:before {
 .chat-messages .message.assistant {
     font-size: 16px;
 }
+
+/* =========================================================
+   UI 2.0 — sotto-tab, anti-overflow, responsive, polish
+   (aggiunte non distruttive: il look esistente resta)
+   ========================================================= */
+
+/* --- Sotto-tab dei gruppi consolidati (Estrazione / Impostazioni) --- */
+.subtab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid #262626;
+    border-radius: 12px;
+}
+.subtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.18s cubic-bezier(0.22,1,0.36,1), color 0.18s;
+}
+.subtab i { font-size: 13px; opacity: 0.9; }
+.subtab:hover { color: var(--text-primary); background: rgba(255,255,255,0.04); }
+.subtab.active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    box-shadow: 0 4px 14px rgba(59,130,246,0.25);
+}
+.subtab:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+/* --- Fix anti-overflow: URL/testi lunghi non rompono piu' il layout --- */
+/* Nessun scroll orizzontale a livello pagina */
+html, body { max-width: 100%; overflow-x: hidden; }
+/* I figli flex possono restringersi (senza questo, stringhe lunghe forzano overflow) */
+.main-content, .content-section, .stats-grid, .glass-card, .metric-card { min-width: 0; }
+/* Input: sempre entro il contenitore */
+input[type="text"], input[type="url"], input:not([type]), textarea, select {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+/* Bottoni: testo/URL lungo va a capo o tronca invece di sfondare */
+.btn-primary, .btn-secondary, .btn-danger, button {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+/* Contenitori che mostrano URL: troncamento elegante */
+.url-display, [data-url], .product-url {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Micro-interazioni (polish): feedback su pressione bottoni --- */
+.btn-primary, .btn-secondary, .btn-danger {
+    transition: transform 0.12s cubic-bezier(0.22,1,0.36,1), filter 0.15s, box-shadow 0.15s;
+}
+.btn-primary:active, .btn-secondary:active, .btn-danger:active { transform: translateY(1px); }
+.nav-item { transition: background 0.18s, color 0.18s; }
+:focus-visible { outline: 2px solid var(--accent-blue); outline-offset: 2px; }
+
+/* --- Responsive (B): sotto i 1200px l'app resta usabile invece di clippare --- */
+@media (max-width: 1199px) {
+    body { min-width: 0; overflow-y: auto; height: auto; }
+    #app { overflow: visible; min-height: 100vh; height: auto; }
+    .sidebar { width: 200px !important; }
+    .stats-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
+}
+@media (max-width: 820px) {
+    #app { flex-direction: column; }
+    .sidebar { width: 100% !important; flex-direction: row; overflow-x: auto; }
+    .sidebar nav { display: flex; flex-direction: row; }
+    .subtab-bar { overflow-x: auto; }
+    .subtab span { display: none; }   /* su schermi molto stretti: solo icone */
+    .subtab { padding: 9px 12px; }
+}
