@@ -15,6 +15,56 @@ from fast_ai_extractor_config import (
 class _AiSelectorMixin:
     """Auto-apprendimento/suggerimento selettori via AI, gestione proxy e browser."""
 
+    async def _extract_via_crawl4ai(self, url: str, stop_flag: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
+        """Fetcher PRIMARIO via Crawl4AI (AsyncWebCrawler + stealth integrato).
+
+        Rende la pagina con browser + playwright-stealth (passa Cloudflare/anti-bot
+        senza la logica captcha custom), restituisce markdown pulito che passiamo
+        all'AI parser cloud esistente (_ai_parse_products / Gemini). Riusa il
+        chromium gia' installato da playwright: nessun setup aggiuntivo nel deploy.
+        Ritorna None se non trova prodotti, cosi' si puo' fare fallback.
+        """
+        try:
+            from crawl4ai import AsyncWebCrawler
+        except Exception as e:
+            print(f"⚠️ Crawl4AI non disponibile: {e}")
+            return None
+
+        try:
+            print(f"🕷️ Crawl4AI fetch: {url}")
+            async with AsyncWebCrawler(verbose=False) as crawler:
+                result = await crawler.arun(url=url)
+
+            if not result or not getattr(result, "success", False):
+                print("❌ Crawl4AI: fetch non riuscito")
+                return None
+
+            markdown = result.markdown or ""
+            if len(markdown.strip()) < 100:
+                print("❌ Crawl4AI: contenuto troppo corto")
+                return None
+
+            print(f"📄 Crawl4AI: {len(markdown)} caratteri di markdown")
+            products = await self._ai_parse_products(markdown, url, stop_flag)
+            if not products:
+                print("❌ Crawl4AI: AI non ha trovato prodotti")
+                return None
+
+            print(f"✅ Crawl4AI: {len(products)} prodotti estratti")
+            return {
+                "success": True,
+                "products": products,
+                "error": None,
+                "total_found": len(products),
+                "containers_found": 0,
+                "container_selector": None,
+                "url": url,
+                "extraction_method": "crawl4ai",
+            }
+        except Exception as e:
+            print(f"❌ Errore Crawl4AI: {e}")
+            return None
+
     async def _extract_via_jina_reader(self, url: str, stop_flag: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
         """Fallback estrazione via Jina Reader (r.jina.ai).
 
