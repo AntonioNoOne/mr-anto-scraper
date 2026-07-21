@@ -34,12 +34,10 @@ class _ParsingMixin:
         se il fetch fallisce, il risultato resta senza prezzo.
         """
         try:
-            from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
-            from crawl4ai.content_filter_strategy import PruningContentFilter
-            from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
-            from crawl_config import light_browser_config, ENRICH_CONCURRENCY
+            from crawl_config import ENRICH_CONCURRENCY, prefer_cloud_fetch
+            from price_utils import pick_price_near_product
         except Exception as e:
-            logger.warning(f"⚠️ Crawl4AI non disponibile per arricchimento prezzi: {e}")
+            logger.warning(f"⚠️ Arricchimento prezzi non disponibile: {e}")
             return results
 
         # Indici dei risultati da arricchire (senza prezzo, con URL http)
@@ -50,39 +48,73 @@ class _ParsingMixin:
         if not targets:
             return results
 
-        md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
-        cfg = CrawlerRunConfig(markdown_generator=md_gen)
-
-        try:
-            from price_utils import pick_price_near_product
-        except Exception:
-            pick_price_near_product = None
-
-        # UN SOLO browser (leggero) riusato per tutte le pagine + cap di concorrenza:
-        # prima si aprivano N browser Chromium in parallelo -> saturavano la RAM
-        # (502/OOM su Render free 512MB).
+        cloud = prefer_cloud_fetch()
         sem = asyncio.Semaphore(ENRICH_CONCURRENCY)
 
-        async def _fetch_price(crawler, idx):
-            url = results[idx]["url"]
-            name = results[idx].get("name", "")
-            try:
-                async with sem:
-                    res = await crawler.arun(url=url, config=cfg)
-                md = res.markdown if res else None
-                text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
-                price_str = pick_price_near_product(text, name) if pick_price_near_product else None
-                if price_str:
-                    val = self._extract_price_from_text(price_str)
-                    if val and val >= 1:
-                        return idx, price_str, val
-            except Exception as e:
-                logger.info(f"⚠️ Arricchimento prezzo fallito per {url}: {str(e)[:80]}")
-            return idx, None, 0
+        def _price_from_text(text, name):
+            price_str = pick_price_near_product(text, name)
+            if price_str:
+                val = self._extract_price_from_text(price_str)
+                if val and val >= 1:
+                    return price_str, val
+            return None, 0
+
+        # --- Fetch CLOUD via Jina Reader (nessun browser: veloce e leggero su Render) ---
+        async def _enrich_cloud():
+            import aiohttp
+            headers = {"X-Return-Format": "markdown", "User-Agent": "Mozilla/5.0"}
+            import os
+            jk = os.getenv("JINA_API_KEY")
+            if jk:
+                headers["Authorization"] = f"Bearer {jk}"
+
+            async def _one(session, idx):
+                url = results[idx]["url"]
+                name = results[idx].get("name", "")
+                try:
+                    async with sem:
+                        async with session.get(f"https://r.jina.ai/{url}", headers=headers,
+                                               timeout=aiohttp.ClientTimeout(total=40)) as resp:
+                            if resp.status != 200:
+                                return idx, None, 0
+                            text = await resp.text()
+                    ps, val = _price_from_text(text, name)
+                    return idx, ps, val
+                except Exception as e:
+                    logger.info(f"⚠️ Jina enrich fallito {url}: {str(e)[:80]}")
+                    return idx, None, 0
+
+            async with aiohttp.ClientSession() as session:
+                return await asyncio.gather(*[_one(session, i) for i in targets])
+
+        # --- Fetch LOCALE via Crawl4AI (un solo browser leggero riusato) ---
+        async def _enrich_browser():
+            from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+            from crawl4ai.content_filter_strategy import PruningContentFilter
+            from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+            from crawl_config import light_browser_config
+            md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
+            cfg = CrawlerRunConfig(markdown_generator=md_gen)
+
+            async def _one(crawler, idx):
+                url = results[idx]["url"]
+                name = results[idx].get("name", "")
+                try:
+                    async with sem:
+                        res = await crawler.arun(url=url, config=cfg)
+                    md = res.markdown if res else None
+                    text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
+                    ps, val = _price_from_text(text, name)
+                    return idx, ps, val
+                except Exception as e:
+                    logger.info(f"⚠️ Crawl4AI enrich fallito {url}: {str(e)[:80]}")
+                    return idx, None, 0
+
+            async with AsyncWebCrawler(config=light_browser_config()) as crawler:
+                return await asyncio.gather(*[_one(crawler, i) for i in targets])
 
         try:
-            async with AsyncWebCrawler(config=light_browser_config()) as crawler:
-                enriched = await asyncio.gather(*[_fetch_price(crawler, i) for i in targets])
+            enriched = await (_enrich_cloud() if cloud else _enrich_browser())
         except Exception as e:
             logger.warning(f"⚠️ Arricchimento prezzi interrotto: {str(e)[:100]}")
             return results
@@ -91,7 +123,7 @@ class _ParsingMixin:
             if price_str:
                 results[idx]["price"] = price_str
                 results[idx]["price_numeric"] = val
-                logger.info(f"💰 Prezzo arricchito: {results[idx].get('site','')} -> {price_str}")
+                logger.info(f"💰 Prezzo arricchito ({'cloud' if cloud else 'browser'}): {results[idx].get('site','')} -> {price_str}")
         return results
 
     def _extract_shopping_results(self, soup: BeautifulSoup, query: str) -> List[Dict[str, Any]]:

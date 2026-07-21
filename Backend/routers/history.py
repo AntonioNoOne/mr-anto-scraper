@@ -214,15 +214,14 @@ async def search_alternative_vendors(request: dict):
         try:
             result = await asyncio.wait_for(
                 app_state.google_search.search_alternative_vendors(product_data),
-                timeout=60,
+                timeout=150,
             )
         except asyncio.TimeoutError:
-            print("⏰ Google Search: timeout 60s superato")
+            print("⏰ Google Search: timeout 150s superato")
             return {
                 "success": False,
-                "error": "Ricerca troppo lenta (timeout 60s). I motori di ricerca "
-                         "potrebbero aver bloccato lo scraping. Riprova o usa lo "
-                         "scraping diretto da URL.",
+                "error": "Ricerca troppo lenta (timeout 150s). Riprova con un nome "
+                         "prodotto più specifico o usa lo scraping diretto da URL.",
             }
 
         if result['success']:

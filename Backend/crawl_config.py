@@ -19,6 +19,20 @@ def _int_env(name: str, default: int) -> int:
 ENRICH_CONCURRENCY = _int_env("CRAWL_CONCURRENCY", 2)
 
 
+def prefer_cloud_fetch() -> bool:
+    """True se conviene usare il fetch CLOUD (Jina Reader) invece del browser locale.
+
+    Su ambienti con poca CPU/RAM (Render free: 0.1 vCPU, 512MB) il browser
+    Chromium è lento e pesante -> meglio Jina (cloud, nessun browser). Attivo
+    automaticamente su Render (env RENDER) o forzabile con PREFER_CLOUD_FETCH=1.
+    In locale resta il browser (crawl4ai), più potente.
+    """
+    val = os.getenv("PREFER_CLOUD_FETCH")
+    if val is not None:
+        return val.strip().lower() in ("1", "true", "yes", "on")
+    return bool(os.getenv("RENDER"))
+
+
 def light_browser_config():
     """BrowserConfig Crawl4AI a bassa impronta di memoria.
 
