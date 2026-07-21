@@ -11,6 +11,7 @@ limite di lunghezza dei file. Nessuna modifica di logica: solo spostamento.
 
 import re
 import random
+import asyncio
 import logging
 from typing import Dict, List, Any
 from urllib.parse import quote_plus
@@ -26,6 +27,58 @@ logger = logging.getLogger(__name__)
 
 class _DuckDuckGoMixin:
     """Metodi di ricerca DuckDuckGo e gestione banner cookie."""
+
+    async def _try_duckduckgo_ddgs(self, query: str) -> List[Dict[str, Any]]:
+        """Ricerca DuckDuckGo via libreria `ddgs` (niente browser).
+
+        Gestisce il token anti-bot internamente: veloce (~1-2s), affidabile e
+        cloud-friendly. Sostituisce lo scraping browser della SPA shopping, che
+        si bloccava a lungo. Ritorna lo stesso formato dei vecchi metodi.
+        """
+        def _search():
+            from ddgs import DDGS
+            with DDGS() as ddgs:
+                return list(ddgs.text(query, region="it-it", max_results=self.max_results or 12))
+
+        try:
+            logger.info(f"🦆 DDG (ddgs) ricerca: {query}")
+            raw = await asyncio.to_thread(_search)
+            results = []
+            for item in raw:
+                title = self._clean_product_title(item.get("title", "") or "")
+                url = item.get("href", "") or ""
+                body = item.get("body", "") or ""
+                if not title or not url:
+                    continue
+                # Il prezzo dallo snippet è inaffidabile (es. "15" da "HP 15"): lo
+                # ricaviamo solo se c'è un vero importo in € nel testo, altrimenti
+                # resta vuoto (il prezzo reale si ottiene estraendo la pagina).
+                price_text = ""
+                price_numeric = 0
+                if "€" in body:
+                    m = re.search(r'€\s*\d[\d.,]*|\d[\d.,]*\s*€', body)
+                    if m:
+                        price_text = m.group().strip()
+                        try:
+                            price_numeric = self._extract_price_from_text(price_text)
+                        except Exception:
+                            price_numeric = 0
+                results.append({
+                    "name": title,
+                    "price": price_text,
+                    "price_numeric": price_numeric,
+                    "url": url,
+                    "site": self._extract_site_from_url(url),
+                    "description": body[:200],
+                    "source": "duckduckgo_ddgs",
+                    "query": query,
+                    "validation_score": 0.75,
+                })
+            logger.info(f"🦆 DDG (ddgs): {len(results)} risultati")
+            return results
+        except Exception as e:
+            logger.error(f"🦆 DDG (ddgs) errore: {e}")
+            return []
 
     async def _handle_cookie_banners(self, page):
         """Gestisce i banner cookie invece di confonderli con captcha"""

@@ -325,14 +325,20 @@ class GoogleSearchIntegration(_DuckDuckGoMixin, _BingMixin, _ParsingMixin, _Vali
         try:
             logger.info(f"🔍 Ricerca venditori alternativi con Playwright: {query}")
 
-            # STRATEGIA 1: Prova DuckDuckGo Shopping (Google rimosso per blocchi persistenti)
-            logger.info("🦆 === STRATEGIA 1: DuckDuckGo Shopping ===")
-            results = await self._try_duckduckgo_shopping(query)
-            logger.info(f"🦆 Risultati DuckDuckGo: {len(results)}")
+            # STRATEGIA 1: DuckDuckGo via libreria ddgs (veloce, no browser, no blocchi)
+            logger.info("🦆 === STRATEGIA 1: DuckDuckGo (ddgs) ===")
+            results = await self._try_duckduckgo_ddgs(query)
+            logger.info(f"🦆 Risultati DuckDuckGo (ddgs): {len(results)}")
 
-            # Se non abbiamo risultati, STRATEGIA 2: Prova Bing Shopping
+            # STRATEGIA 2 (fallback): SPA shopping DuckDuckGo via browser
             if not results:
-                logger.info("🔄 === STRATEGIA 2: Bing Shopping ===")
+                logger.info("🦆 === STRATEGIA 2: DuckDuckGo Shopping (browser) ===")
+                results = await self._try_duckduckgo_shopping(query)
+                logger.info(f"🦆 Risultati DuckDuckGo (browser): {len(results)}")
+
+            # Se non abbiamo risultati, STRATEGIA 3: Prova Bing Shopping
+            if not results:
+                logger.info("🔄 === STRATEGIA 3: Bing Shopping ===")
                 results = await self._try_bing_shopping(query)
                 logger.info(f"🔍 Risultati Bing: {len(results)}")
 
