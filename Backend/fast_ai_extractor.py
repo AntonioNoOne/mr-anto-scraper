@@ -157,18 +157,31 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
         # Prima prova sempre in modalità normale (veloce)
         needs_visible_browser = False
 
-        # Per altri siti, usa il metodo normale
+        def _stopped():
+            return bool(stop_flag and stop_flag.get("stop"))
+
+        # Siti con anti-bot forte (Cloudflare ecc.): Jina Reader come PRIMO tentativo.
+        # Fetch+render lato cloud, salta la lotta anti-bot del browser locale.
+        is_strong_anti_bot = any(s in url for s in STRONG_ANTI_BOT_SITES)
+        jina_tried = False
+        if is_strong_anti_bot and not _stopped():
+            print("🛡️ Sito anti-bot forte: Jina Reader come primo tentativo")
+            jina_tried = True
+            jina_first = await self._extract_via_jina_reader(url, stop_flag)
+            if jina_first and jina_first.get("products"):
+                print(f"✅ Jina Reader (primo tentativo): {jina_first['total_found']} prodotti")
+                return jina_first
+            print("↩️ Jina senza prodotti, procedo col browser")
+
         result = await self._extract_single_attempt(url, headless, needs_visible_browser, None, browser_config, stop_flag)
 
-        # Fallback Jina Reader: se il browser non ha prodotti (pagina bloccata/JS-heavy),
-        # prova a fetchare la pagina come markdown pulito lato cloud ed estrarre da lì.
-        if not result or not result.get("success") or not result.get("products"):
-            # Rispetta lo stop utente
-            if not (stop_flag and stop_flag.get("stop")):
-                jina_result = await self._extract_via_jina_reader(url, stop_flag)
-                if jina_result and jina_result.get("products"):
-                    print(f"✅ Fallback Jina Reader riuscito: {jina_result['total_found']} prodotti")
-                    return jina_result
+        # Fallback Jina Reader: se il browser non ha prodotti e Jina non è già stato provato.
+        if (not result or not result.get("success") or not result.get("products")) \
+                and not jina_tried and not _stopped():
+            jina_result = await self._extract_via_jina_reader(url, stop_flag)
+            if jina_result and jina_result.get("products"):
+                print(f"✅ Fallback Jina Reader riuscito: {jina_result['total_found']} prodotti")
+                return jina_result
 
         return result
 

@@ -223,7 +223,7 @@ class _ProvidersMixin:
                     "responseMimeType": "application/json",
 
                     # Alzato per evitare troncamenti su pagine con molti prodotti
-                    "maxOutputTokens": 8192
+                    "maxOutputTokens": 16384
 
                 }
 

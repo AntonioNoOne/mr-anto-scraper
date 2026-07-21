@@ -34,6 +34,19 @@ class _ParsingMixin:
 
 
 
+            # Con JSON mode (responseMimeType) la risposta è già JSON valido:
+            # il parse diretto è il caso normale. Solo se fallisce si passa alle euristiche.
+
+            try:
+
+                return json.loads(response.strip())
+
+            except json.JSONDecodeError:
+
+                pass
+
+
+
             # Prova a estrarre JSON dalla risposta
 
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
@@ -58,11 +71,10 @@ class _ParsingMixin:
 
 
 
-                # Gestisci virgole mancanti
+                # NB: niente inserimento automatico di virgole (corrompeva JSON valido).
+                # Rimuovi solo virgole di troppo prima di } o ] (errore comune e sicuro da fixare).
 
-                json_str = re.sub(r'(\w+)\s*(\})\s*(\w+)', r'\1,\2,\3', json_str)
-
-                json_str = re.sub(r'(\})\s*(\w+)', r'\1,\2', json_str)
+                json_str = re.sub(r',\s*([}\]])', r'\1', json_str)
 
 
 

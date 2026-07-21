@@ -20,6 +20,7 @@ class ExtractResponse(BaseModel):
     containers_found: int = 0
     container_selector: Optional[str] = None
     url: Optional[str] = None
+    extraction_method: Optional[str] = None  # es: "browser" | "jina_reader"
 
 class MultipleExtractResponse(BaseModel):
     success: bool
