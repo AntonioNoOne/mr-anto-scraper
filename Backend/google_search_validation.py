@@ -54,6 +54,11 @@ class _ValidationMixin:
                     logger.info(f"🔍 DEBUG: Risultato {i+1} scartato - URL non valido: {url}")
                     continue
 
+                # Filtro junk: social, forum, recensioni, marketplace esteri
+                if self._is_junk_domain(url):
+                    logger.info(f"🔍 DEBUG: Risultato {i+1} scartato - dominio non pertinente: {url}")
+                    continue
+
                 # Calcola score di validazione
                 score = self._calculate_validation_score(result, original_product)
                 logger.info(f"🔍 DEBUG: Risultato {i+1} - Score: {score}")
@@ -84,6 +89,23 @@ class _ValidationMixin:
             return bool(parsed.scheme and parsed.netloc)
         except:
             return False
+
+    # Domini non pertinenti al confronto prezzi IT: social, forum, recensioni,
+    # aggregatori/marketplace esteri. Scartati dai risultati.
+    _JUNK_DOMAINS = (
+        "reddit.com", "medium.com", "quora.com", "youtube.com", "facebook.com",
+        "instagram.com", "twitter.com", "x.com", "pinterest.", "tiktok.com",
+        "wikipedia.org", "wikihow", "tomshardware", "hdblog", "ilpost",
+        # marketplace/recensioni esteri (non utili per prezzi in Italia)
+        "amazon.com", "flipkart.com", "walmart.com", "bestbuy.com", "target.com",
+        "thegioididong", "shopdunk", "24hstore", "ceneo.pl", "arukereso",
+        "yahoo.co", "yahoo.com", "aliexpress", "backmarket.com",
+    )
+
+    def _is_junk_domain(self, url: str) -> bool:
+        """True se il dominio non è un venditore pertinente (social/forum/estero)."""
+        u = (url or "").lower()
+        return any(j in u for j in self._JUNK_DOMAINS)
 
     def _calculate_validation_score(self, result: Dict[str, Any], original_product: Dict[str, Any]) -> float:
         """Calcola score di validazione per un risultato - SOLO VICINANZA AL TESTO"""
