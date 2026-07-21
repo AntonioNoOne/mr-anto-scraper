@@ -1,7 +1,13 @@
 // Configurazione principale dell'applicazione
+
+// API base: in locale (localhost/127.0.0.1) usa la stessa origine del server
+// che serve il frontend; in produzione usa il deploy Render.
+const _isLocal = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
+const API_BASE_URL = _isLocal ? window.location.origin : 'https://mr-anto-scraper.onrender.com';
+
 const CONFIG = {
     // API Configuration
-    API_BASE_URL: 'https://mr-anto-scraper.onrender.com',
+    API_BASE_URL: API_BASE_URL,
     
     // UI Configuration
     UI: {

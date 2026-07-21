@@ -1442,8 +1442,8 @@
                     recentActivities: initialState.recentActivities || [],
                     // Aggiungi l'oggetto api per renderlo disponibile nel template
                     api: api,
-                    // Aggiungi l'oggetto actions per renderlo disponibile nel template
-                    actions: new Actions(),
+                    // Usa il singleton globale (evita una seconda istanza di Actions)
+                    actions: window.actions,
                     // Scheduling & Monitoring - Nuove variabili
                     selectedProducts: [],
                     monitoringConfig: {
