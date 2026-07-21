@@ -53,25 +53,34 @@ class _ParsingMixin:
                 'floor', 'for sale', 'for rent', 'property', 'land', 'acres', 'sq ft'
             ]
             
-            # Conta indicatori forti (peso maggiore)
-            strong_score = sum(1 for indicator in strong_real_estate_indicators if indicator in content_lower)
-            
-            # Conta indicatori deboli (peso minore)
-            weak_score = sum(1 for indicator in weak_real_estate_indicators if indicator in content_lower)
-            
-            # Calcola punteggio totale (indicator forti valgono di più)
+            # Match per PAROLA INTERA (word boundary): evita falsi positivi da
+            # substring (es. 'ml' dentro '.html', 'g ' dentro '16gb', 'camera'
+            # dentro 'fotocamera') che facevano classificare notebook come immobili.
+            import re
+            def _count(indicators):
+                n = 0
+                for ind in indicators:
+                    if re.search(r'\b' + re.escape(ind.strip()) + r'\b', content_lower):
+                        n += 1
+                return n
+
+            strong_score = _count(strong_real_estate_indicators)
+            weak_score = _count(weak_real_estate_indicators)
             total_score = (strong_score * 3) + weak_score
-            
-            # 🔍 LOG DETECTION: Mostra punteggi
+
             print(f"🔍 Punteggio indicatori forti: {strong_score}")
             print(f"🔍 Punteggio indicatori deboli: {weak_score}")
             print(f"🔍 Punteggio totale: {total_score}")
-            
-            # Soglia più alta per evitare falsi positivi
-            is_real_estate = total_score >= 8
-            
+
+            # Servono almeno DUE indicatori forti distinti (appartamento, bilocale,
+            # trilocale, villa, attico...). Un solo match forte è spesso un falso
+            # positivo (es. 'studio'/'loft' presenti in prodotti elettronici come
+            # "Mac Studio"). Una vera pagina immobiliare ne contiene sempre parecchi;
+            # una pagina e-commerce praticamente mai.
+            is_real_estate = strong_score >= 2
+
             print(f"🔍 Rilevato come real estate: {is_real_estate}")
-            
+
             return is_real_estate
             
         except Exception as e:
@@ -398,19 +407,24 @@ CRITICAL INSTRUCTIONS - READ CAREFULLY:
    - Must NOT be just a category or menu item
    - Must have a real, visible price
 
-5. **For EACH VALID product, extract:**
+5. **For EACH VALID product, extract (INFER from the product name when not a separate field):**
    - name: Full product name
    - price: Exact price in € format (ONLY if you can see a real price) DON'T USE PLACEHOLDER PRICES or Invented prices!
-   - brand: Brand name if mentioned
-   - model: Model/identifier if mentioned
+   - brand: The manufacturer. ALWAYS infer it from the product name — it is almost
+     always the first word/token (e.g. "HP 15-FC0110NL" -> "HP"; "ASUS Vivobook 16" ->
+     "ASUS"; "APPLE MacBook" -> "APPLE"; "ACER Chromebook 314" -> "ACER"). Only leave
+     empty if truly not identifiable.
+   - model: The model code/identifier taken from the name (e.g. "HP 15-FC0110NL" ->
+     "15-FC0110NL"; "ASUS Vivobook 16 F1607" -> "Vivobook 16 F1607").
    - weight: Weight if mentioned
    - price_per_kg: Price per kg if applicable
    - rating: Star rating if available
    - description: Product description
-   - category: Product category
+   - category: Product category (infer from context, e.g. "Notebook", "Smartphone")
    - availability: Stock status
    - warranty: Warranty info
-   - specs: Technical specifications
+   - specs: Technical specs present in the name/description (CPU, RAM, storage,
+     screen size, etc.). Extract whatever is present, e.g. "Intel Core i5, 16GB, 512GB SSD, 15,6\"".
 
 6. **Examples of what to EXTRACT:**
    ✅ Any product with a real name and real price
