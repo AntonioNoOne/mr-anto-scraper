@@ -162,6 +162,24 @@ class _ExtractionMixin:
                                 app: {}
                             };
                         }
+
+                        // Check anti-bot comuni: lingua, plugin, permessi
+                        try {
+                            Object.defineProperty(navigator, 'languages', {
+                                get: () => ['it-IT', 'it', 'en-US', 'en']
+                            });
+                            Object.defineProperty(navigator, 'plugins', {
+                                get: () => [1, 2, 3, 4, 5]
+                            });
+                            const _q = window.navigator.permissions && window.navigator.permissions.query;
+                            if (_q) {
+                                window.navigator.permissions.query = (p) => (
+                                    p && p.name === 'notifications'
+                                        ? Promise.resolve({ state: Notification.permission })
+                                        : _q(p)
+                                );
+                            }
+                        } catch (e) {}
                     })();
                 """
                 

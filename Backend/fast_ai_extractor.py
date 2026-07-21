@@ -183,6 +183,10 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
                 print(f"✅ Fallback Jina Reader riuscito: {jina_result['total_found']} prodotti")
                 return jina_result
 
+        # Etichetta il metodo per il path browser (coerenza con extraction_method)
+        if isinstance(result, dict) and result.get("success") and not result.get("extraction_method"):
+            result["extraction_method"] = "browser"
+
         return result
 
     def _extract_domain(self, url: str) -> str:

@@ -41,6 +41,21 @@ class _BrowserMixin:
 
                 'button:has-text("ok")',
 
+                'button:has-text("Accetta tutto")',
+
+                'button:has-text("Accetta e chiudi")',
+
+                'button:has-text("Consenti tutti")',
+
+                # Consent manager comuni (ID/classi specifiche: hit rate alto)
+                '#onetrust-accept-btn-handler',
+
+                '.iubenda-cs-accept-btn',
+
+                'button#didomi-notice-agree-button',
+
+                '[aria-label*="accetta" i]',
+
                 '[class*="cookie"]',
 
                 '[id*="cookie"]'
