@@ -815,6 +815,7 @@ class PriceMonitor:
             from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
             from crawl4ai.content_filter_strategy import PruningContentFilter
             from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+            from crawl_config import light_browser_config
             from price_utils import pick_price_near_product
         except Exception as e:
             logger.error(f"❌ Dipendenze estrazione prezzo mancanti: {e}")
@@ -823,7 +824,8 @@ class PriceMonitor:
         try:
             md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
             cfg = CrawlerRunConfig(markdown_generator=md_gen)
-            async with AsyncWebCrawler(verbose=False) as crawler:
+            # Browser leggero per non saturare la RAM
+            async with AsyncWebCrawler(config=light_browser_config()) as crawler:
                 res = await crawler.arun(url=url, config=cfg)
             md = res.markdown if res else None
             text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")

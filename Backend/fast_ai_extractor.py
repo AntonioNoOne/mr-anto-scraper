@@ -141,7 +141,8 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
             human_delay = 2.0
             user_agent = 'auto'
             proxy = None
-        
+            headless = False  # stealth di default (evita UnboundLocalError)
+
         # Rate limiting per evitare blocchi
         domain = self._extract_domain(url)
         current_time = time.time()

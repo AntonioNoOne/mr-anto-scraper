@@ -28,6 +28,7 @@ class _AiSelectorMixin:
             from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
             from crawl4ai.content_filter_strategy import PruningContentFilter
             from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+            from crawl_config import light_browser_config
         except Exception as e:
             print(f"⚠️ Crawl4AI non disponibile: {e}")
             return None
@@ -38,7 +39,8 @@ class _AiSelectorMixin:
             # corto (meno chunk, AI parsing piu' veloce), mantenendo i prodotti.
             md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
             cfg = CrawlerRunConfig(markdown_generator=md_gen)
-            async with AsyncWebCrawler(verbose=False) as crawler:
+            # Browser leggero (text_mode) per non saturare la RAM
+            async with AsyncWebCrawler(config=light_browser_config()) as crawler:
                 result = await crawler.arun(url=url, config=cfg)
 
             if not result or not getattr(result, "success", False):

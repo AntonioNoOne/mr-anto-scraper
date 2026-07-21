@@ -37,6 +37,7 @@ class _ParsingMixin:
             from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
             from crawl4ai.content_filter_strategy import PruningContentFilter
             from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+            from crawl_config import light_browser_config, ENRICH_CONCURRENCY
         except Exception as e:
             logger.warning(f"⚠️ Crawl4AI non disponibile per arricchimento prezzi: {e}")
             return results
@@ -57,15 +58,19 @@ class _ParsingMixin:
         except Exception:
             pick_price_near_product = None
 
-        async def _fetch_price(idx):
+        # UN SOLO browser (leggero) riusato per tutte le pagine + cap di concorrenza:
+        # prima si aprivano N browser Chromium in parallelo -> saturavano la RAM
+        # (502/OOM su Render free 512MB).
+        sem = asyncio.Semaphore(ENRICH_CONCURRENCY)
+
+        async def _fetch_price(crawler, idx):
             url = results[idx]["url"]
             name = results[idx].get("name", "")
             try:
-                async with AsyncWebCrawler(verbose=False) as crawler:
+                async with sem:
                     res = await crawler.arun(url=url, config=cfg)
                 md = res.markdown if res else None
                 text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
-                # Prezzo € più vicino al nome del prodotto (gestisce pagine liste/negozio)
                 price_str = pick_price_near_product(text, name) if pick_price_near_product else None
                 if price_str:
                     val = self._extract_price_from_text(price_str)
@@ -75,7 +80,13 @@ class _ParsingMixin:
                 logger.info(f"⚠️ Arricchimento prezzo fallito per {url}: {str(e)[:80]}")
             return idx, None, 0
 
-        enriched = await asyncio.gather(*[_fetch_price(i) for i in targets])
+        try:
+            async with AsyncWebCrawler(config=light_browser_config()) as crawler:
+                enriched = await asyncio.gather(*[_fetch_price(crawler, i) for i in targets])
+        except Exception as e:
+            logger.warning(f"⚠️ Arricchimento prezzi interrotto: {str(e)[:100]}")
+            return results
+
         for idx, price_str, val in enriched:
             if price_str:
                 results[idx]["price"] = price_str
