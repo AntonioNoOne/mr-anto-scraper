@@ -710,8 +710,16 @@
                                         </div>
                                     </div>
                                     
-                            <!-- Lista Prodotti Database -->
+                            <!-- Lista Prodotti Database: ricerca + paginazione -->
                             <div v-if="store.state.databaseProducts && store.state.databaseProducts.length > 0" class="space-y-4">
+                                <!-- Barra ricerca -->
+                                <div class="relative mb-2">
+                                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                                    <input v-model="dbSearch" @input="dbShowLimit = 24" type="text"
+                                           placeholder="Cerca per nome, marca o sito..."
+                                           class="w-full bg-gray-800 border border-gray-700 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:border-blue-500 focus:outline-none">
+                                </div>
+
                                 <div class="overflow-x-auto">
                                     <table class="min-w-full bg-gray-800 rounded-lg">
                                         <thead class="bg-gray-700">
@@ -724,7 +732,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr v-for="(product, index) in store.state.databaseProducts" :key="index" 
+                                            <tr v-for="(product, index) in filteredDbProducts().slice(0, dbShowLimit)" :key="index"
                                                  class="border-b border-gray-700 hover:bg-gray-700">
                                                 <td class="p-2">
                                                     <div class="font-medium">{{ product.name }}</div>
@@ -744,13 +752,23 @@
                                                     {{ formatDate(product.session_id) }}
                                                 </td>
                                             </tr>
+                                            <tr v-if="filteredDbProducts().length === 0">
+                                                <td colspan="5" class="p-6 text-center text-gray-500">Nessun prodotto corrisponde a "{{ dbSearch }}"</td>
+                                            </tr>
                                         </tbody>
                                     </table>
-                                    
-                                    <!-- Info prodotti -->
-                                    <div class="text-center py-4 text-gray-400">
-                                        Mostrando {{ store.state.databaseProducts.length }} prodotti totali
-                                        <span v-if="selectedDomain" class="text-blue-400"> (filtrati per {{ selectedDomain }})</span>
+
+                                    <!-- Conteggio + carica altri -->
+                                    <div class="text-center py-4 text-gray-400 space-y-3">
+                                        <div>
+                                            Mostrando {{ Math.min(dbShowLimit, filteredDbProducts().length) }} di {{ filteredDbProducts().length }} prodotti
+                                            <span v-if="dbSearch" class="text-blue-400"> (filtro: "{{ dbSearch }}")</span>
+                                        </div>
+                                        <button v-if="filteredDbProducts().length > dbShowLimit"
+                                                @click="dbShowLimit += 24"
+                                                class="btn-secondary px-6 py-2">
+                                            <i class="fas fa-chevron-down mr-2"></i>Mostra altri
+                                        </button>
                                         </div>
                                     </div>
                                 </div>
@@ -1441,6 +1459,9 @@
                     activeSection: initialState.activeSection || 'dashboard',
                     // Sotto-tab dei gruppi consolidati (Estrazione / Impostazioni)
                     activeTab: 'scraping',
+                    // Confronto: ricerca + paginazione della lista prodotti DB
+                    dbSearch: '',
+                    dbShowLimit: 24,
                     chatSidebarOpen: initialState.chatSidebarOpen || false,
                     // Flag per tracciare l'inizializzazione dei grafici
                     chartsInitialized: false,
@@ -1874,8 +1895,10 @@
                                 total_found: products.length
                             }));
                             
-                            // Aggiorna lo store con i prodotti del database
-                            this.store.state.genericResults = formattedResults;
+                            // Aggiorna lo store con setState: triggera il re-render
+                            // (l'assegnazione diretta a store.state NON notificava i
+                            // listener, quindi la vista non si aggiornava)
+                            store.setState({ genericResults: formattedResults });
                             console.log('✅ Prodotti formattati per scheduling:', formattedResults.length, 'siti');
                             
                             // RIMOSSO ALERT: Non interrompe più il flusso
@@ -2628,6 +2651,20 @@
                     if (!match.price_statistics || !match.price_statistics.max_price || !match.price_statistics.min_price) return 'N/A';
                     return (match.price_statistics.max_price - match.price_statistics.min_price).toFixed(2);
                 },
+                filteredDbProducts() {
+                    // Lista prodotti DB filtrata dalla ricerca (nome, marca, sito)
+                    const list = (this.store.state.databaseProducts) || [];
+                    const q = (this.dbSearch || '').trim().toLowerCase();
+                    if (!q) return list;
+                    return list.filter(p => {
+                        const hay = [
+                            p.name, p.brand, p.source, p.site,
+                            this.getSiteNameFromProduct(p)
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return hay.includes(q);
+                    });
+                },
+
                 getSiteNameFromProduct(product) {
                     // Prova diversi campi per trovare il nome del sito
                     const possibleSources = [

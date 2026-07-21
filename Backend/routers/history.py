@@ -6,6 +6,7 @@ Router per storico, statistiche, Google Search e configurazione browser:
 /sites/performance/stats, /api/browser-config (GET/POST).
 """
 
+import asyncio
 import json
 from datetime import datetime
 
@@ -207,8 +208,22 @@ async def search_alternative_vendors(request: dict):
         product_data = request
         print(f"📦 Dati prodotto: {product_data}")
 
-        # Ricerca venditori alternativi
-        result = await app_state.google_search.search_alternative_vendors(product_data)
+        # Ricerca venditori alternativi con timeout: lo scraping browser di
+        # Google/Bing/DDG può bloccarsi a lungo (anti-bot). Meglio rispondere con
+        # un errore chiaro entro 60s che lasciare la UI appesa all'infinito.
+        try:
+            result = await asyncio.wait_for(
+                app_state.google_search.search_alternative_vendors(product_data),
+                timeout=60,
+            )
+        except asyncio.TimeoutError:
+            print("⏰ Google Search: timeout 60s superato")
+            return {
+                "success": False,
+                "error": "Ricerca troppo lenta (timeout 60s). I motori di ricerca "
+                         "potrebbero aver bloccato lo scraping. Riprova o usa lo "
+                         "scraping diretto da URL.",
+            }
 
         if result['success']:
             print(f"✅ Ricerca completata: {len(result.get('alternative_vendors', []))} venditori trovati")
