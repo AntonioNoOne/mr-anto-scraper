@@ -100,6 +100,12 @@ class _ValidationMixin:
         "amazon.com", "flipkart.com", "walmart.com", "bestbuy.com", "target.com",
         "thegioididong", "shopdunk", "24hstore", "ceneo.pl", "arukereso",
         "yahoo.co", "yahoo.com", "aliexpress", "backmarket.com",
+        # marketplace esteri aggiuntivi (BR/LatAm/Asia/EU non-IT)
+        "magazineluiza", "magalu", "mercadoli", "submarino", "americanas",
+        "casasbahia", "shopee", "lazada", "temu.", "wish.com", "otto.de",
+        "kaufland", "allegro.pl", "emag.", "bol.com", "fnac.com", "fnac.es",
+        "mediamarkt", "idealo.de", "idealo.co", "amazon.de", "amazon.es",
+        "amazon.fr", "amazon.co.uk", "ebay.com", "newegg", "rakuten",
     )
 
     def _is_junk_domain(self, url: str) -> bool:
