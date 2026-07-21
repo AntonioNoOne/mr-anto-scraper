@@ -101,3 +101,6 @@ Backend/llm_scraper_scripts/
 # File di configurazione locale con secret (usa env.local.example come template)
 Backend/env.local
 env.local
+
+# Frontend build deps
+Frontend/node_modules/

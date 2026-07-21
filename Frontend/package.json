@@ -1,0 +1,22 @@
+{
+  "name": "mr-anto-scraper-frontend",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Frontend dashboard — asset self-hosted (no CDN) + Tailwind buildato",
+  "scripts": {
+    "build:css": "tailwindcss build css/tailwind.entry.css -o css/tailwind.build.css",
+    "vendor": "node scripts/vendor.mjs",
+    "build": "npm run vendor && npm run build:css"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.47",
+    "tailwindcss": "2.2.19"
+  },
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "6.4.0",
+    "axios": "1.7.9",
+    "chart.js": "4.4.7",
+    "vue": "3.5.13"
+  }
+}

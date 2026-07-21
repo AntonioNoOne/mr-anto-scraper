@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jusper - AI Scraper Dashboard (Modulare)</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css?v=1" rel="stylesheet">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Asset self-hosted (nessuna CDN): Tailwind buildato+purgato, poi override custom -->
+    <link href="/static/css/tailwind.build.css?v=2" rel="stylesheet">
+    <link href="/static/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css?v=2" rel="stylesheet">
+    <script src="/static/vendor/vue.global.prod.js"></script>
+    <script src="/static/vendor/axios.min.js"></script>
+    <script src="/static/vendor/chart.umd.js"></script>
 </head>
 <body>
     <div id="app" class="flex h-screen">
@@ -1401,6 +1402,8 @@
                 <script src="/static/js/config.js"></script>
                 <script src="/static/js/api.js"></script>
                 <script src="/static/js/store.js"></script>
+                <script src="/static/js/store.methods.js"></script>
+                <script src="/static/js/store.init.js"></script>
                 <script src="/static/js/charts.js"></script>
                 <script src="/static/js/actions.js?v=8&t=2025"></script>
                 <script>
