@@ -441,7 +441,8 @@ class PriceMonitor:
                             # Genera alert se necessario
                             if abs(price_change) >= product.alert_threshold:
                                 alert = await self._generate_price_alert(
-                                    product, product.current_price, current_price, price_change
+                                    product, product.current_price, current_price, price_change,
+                                    cursor=cursor
                                 )
                                 if alert:
                                     alerts_generated += 1
@@ -831,46 +832,57 @@ class PriceMonitor:
         except:
             return 0.0
     
-    async def _generate_price_alert(self, product: MonitoredProduct, 
-                                  old_price: str, new_price: str, 
-                                  change_percentage: float) -> Optional[PriceAlert]:
-        """Genera alert per variazione prezzo"""
+    async def _generate_price_alert(self, product: MonitoredProduct,
+                                  old_price: str, new_price: str,
+                                  change_percentage: float,
+                                  cursor=None) -> Optional[PriceAlert]:
+        """Genera alert per variazione prezzo.
+
+        Se `cursor` è fornito (es. da check_all_prices, che ha già una
+        transazione aperta) lo riusa: aprire una NUOVA connessione qui causava
+        'database is locked' e l'alert non veniva salvato. Il commit lo fa il
+        chiamante. Senza cursor, apre una connessione propria e committa.
+        """
         try:
-            with sqlite3.connect(self.db_path) as conn:
-                cursor = conn.cursor()
-                
-                alert_type = "increase" if change_percentage > 0 else "decrease"
-                message = f"Prezzo {product.name} {alert_type} del {abs(change_percentage):.1f}%: {old_price} → {new_price}"
-                
-                cursor.execute("""
-                    INSERT INTO price_alerts 
-                    (product_id, old_price, new_price, change_percentage, alert_type, message)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                """, (product.id, old_price, new_price, change_percentage, alert_type, message))
-                
-                # Aggiorna contatore variazioni prodotto
-                cursor.execute("""
-                    UPDATE monitored_products 
-                    SET price_changes = price_changes + 1 
-                    WHERE id = ?
-                """, (product.id,))
-                
-                conn.commit()
-                
-                alert_id = cursor.lastrowid
-                logger.info(f"🔔 Alert generato: {message}")
-                
-                return PriceAlert(
-                    id=alert_id,
-                    product_id=product.id,
-                    old_price=old_price,
-                    new_price=new_price,
-                    change_percentage=change_percentage,
-                    alert_type=alert_type,
-                    timestamp=datetime.now(),
-                    is_read=False,
-                    message=message
-                )
+            own_conn = None
+            if cursor is None:
+                own_conn = sqlite3.connect(self.db_path)
+                cursor = own_conn.cursor()
+
+            alert_type = "increase" if change_percentage > 0 else "decrease"
+            message = f"Prezzo {product.name} {alert_type} del {abs(change_percentage):.1f}%: {old_price} → {new_price}"
+
+            cursor.execute("""
+                INSERT INTO price_alerts
+                (product_id, old_price, new_price, change_percentage, alert_type, message)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (product.id, old_price, new_price, change_percentage, alert_type, message))
+
+            cursor.execute("""
+                UPDATE monitored_products
+                SET price_changes = price_changes + 1
+                WHERE id = ?
+            """, (product.id,))
+
+            alert_id = cursor.lastrowid
+
+            if own_conn is not None:
+                own_conn.commit()
+                own_conn.close()
+
+            logger.info(f"🔔 Alert generato: {message}")
+
+            return PriceAlert(
+                id=alert_id,
+                product_id=product.id,
+                old_price=old_price,
+                new_price=new_price,
+                change_percentage=change_percentage,
+                alert_type=alert_type,
+                timestamp=datetime.now(),
+                is_read=False,
+                message=message
+            )
                 
         except Exception as e:
             logger.error(f"❌ Errore generazione alert: {e}")

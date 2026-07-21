@@ -24,22 +24,16 @@ async def add_product_to_monitoring(request: dict):
                     "error": f"Campo mancante: {field}"
                 }
 
-        # Aggiungi al monitoring
-        result = await app_state.price_monitor.add_product_to_monitoring(
-            product_data=request,
-            alert_threshold=request.get('alert_threshold', 5.0),
-            check_frequency=request.get('check_frequency', 24)
-        )
+        # add_product_to_scheduler aggiunge al monitoring E crea il task schedulato
+        # in un'unica operazione (evita il doppio inserimento che prima faceva
+        # fallire la registrazione del task -> total_tasks restava 0).
+        result = await app_state.price_scheduler.add_product_to_scheduler(request)
 
-        if result['success']:
-            # Aggiungi anche al scheduler
-            await app_state.price_scheduler.add_product_to_scheduler(request)
-
-            print(f"✅ Prodotto aggiunto al monitoring: {result['product_id']}")
-            return result
+        if result.get('success'):
+            print(f"✅ Prodotto aggiunto a monitoring + scheduler: {result.get('product_id')}")
         else:
-            print(f"❌ Errore aggiunta al monitoring: {result.get('error')}")
-            return result
+            print(f"❌ Errore aggiunta: {result.get('error')}")
+        return result
 
     except Exception as e:
         print(f"❌ Errore aggiunta prodotto al monitoring: {e}")
