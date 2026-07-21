@@ -62,10 +62,20 @@ except Exception as e:
 class AIContentAnalyzer:
     """Analizzatore AI intelligente per contenuti web"""
 
+    @staticmethod
+    def _clean_key(value: Optional[str]) -> Optional[str]:
+        """Ritorna la chiave solo se reale: scarta vuoti e placeholder tipo 'your_..._here'."""
+        if not value:
+            return None
+        v = value.strip()
+        if not v or v.lower().startswith("your_") or v.lower().endswith("_here"):
+            return None
+        return v
+
     def __init__(self):
         """Inizializza l'analizzatore AI"""
-        self.openai_api_key = os.getenv('OPENAI_API_KEY')
-        self.gemini_api_key = os.getenv('GEMINI_API_KEY')
+        self.openai_api_key = self._clean_key(os.getenv('OPENAI_API_KEY'))
+        self.gemini_api_key = self._clean_key(os.getenv('GEMINI_API_KEY'))
 
         # Config guidata da env (fonte unica: env.local / variabili Render)
         # AI_PROVIDER: auto | openai | gemini  -> determina l'ordine di tentativo
