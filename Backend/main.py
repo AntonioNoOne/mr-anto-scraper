@@ -1006,7 +1006,7 @@ async def check_api_keys():
                 "gemini": {
                     "configured": bool(gemini_key),
                     "key_preview": gemini_key[:10] + "..." if gemini_key else "Non configurata",
-                    "model": os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+                    "model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
                 }
             }
         }

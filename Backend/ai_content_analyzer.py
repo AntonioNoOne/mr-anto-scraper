@@ -81,7 +81,7 @@ class AIContentAnalyzer:
         # AI_PROVIDER: auto | openai | gemini  -> determina l'ordine di tentativo
         self.ai_provider = os.getenv('AI_PROVIDER', 'auto').lower().strip()
         self.openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
-        self.gemini_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
+        self.gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
 
         print("🔧 AI Analyzer Init:")
 
