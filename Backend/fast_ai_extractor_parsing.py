@@ -1,5 +1,6 @@
 """Mixin di parsing/detection per FastAIExtractor."""
 
+import asyncio
 from typing import Dict, List, Any, Optional
 
 
@@ -246,22 +247,24 @@ class _ParsingMixin:
                         chunk = content_text[start:end]
                         chunks.append(chunk)
                     
-                    all_products = []
-                    total_chunks = len(chunks)
-                    
-                    # Elaborazione chunk
-                    
-                    for i, chunk in enumerate(chunks, 1):
-                        # CHECKPOINT 5: Controlla se deve fermarsi durante l'elaborazione chunk
-                        if stop_flag and stop_flag.get('stop'):
-                            print(f"🛑 Elaborazione chunk fermata per {url}")
-                            return []
-                            
+                    # CHECKPOINT 5: stop prima di lanciare i chunk
+                    if stop_flag and stop_flag.get('stop'):
+                        print(f"🛑 Elaborazione chunk fermata per {url}")
+                        return []
+
+                    # Elabora i chunk IN PARALLELO (asyncio.gather) invece che in
+                    # serie: le chiamate AI sono I/O-bound, girano insieme -> molto
+                    # piu' veloce (da ~N*t a ~t).
+                    async def _proc_chunk(ch):
                         try:
-                            chunk_products = await self._process_single_chunk(chunk, url, stop_flag)
-                            all_products.extend(chunk_products)
-                        except Exception as chunk_error:
-                            continue
+                            return await self._process_single_chunk(ch, url, stop_flag)
+                        except Exception:
+                            return []
+
+                    chunk_results = await asyncio.gather(*[_proc_chunk(c) for c in chunks])
+                    all_products = []
+                    for cp in chunk_results:
+                        all_products.extend(cp or [])
                     
                     # Finalizzazione risultati
                     

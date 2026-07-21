@@ -25,26 +25,36 @@ class _AiSelectorMixin:
         Ritorna None se non trova prodotti, cosi' si puo' fare fallback.
         """
         try:
-            from crawl4ai import AsyncWebCrawler
+            from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+            from crawl4ai.content_filter_strategy import PruningContentFilter
+            from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
         except Exception as e:
             print(f"⚠️ Crawl4AI non disponibile: {e}")
             return None
 
         try:
             print(f"🕷️ Crawl4AI fetch: {url}")
+            # Content filter: rimuove nav/footer/boilerplate -> fit_markdown piu'
+            # corto (meno chunk, AI parsing piu' veloce), mantenendo i prodotti.
+            md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
+            cfg = CrawlerRunConfig(markdown_generator=md_gen)
             async with AsyncWebCrawler(verbose=False) as crawler:
-                result = await crawler.arun(url=url)
+                result = await crawler.arun(url=url, config=cfg)
 
             if not result or not getattr(result, "success", False):
                 print("❌ Crawl4AI: fetch non riuscito")
                 return None
 
-            markdown = result.markdown or ""
+            # Usa il markdown pulito (fit_markdown); fallback al raw se troppo corto
+            md_obj = result.markdown
+            raw_md = str(getattr(md_obj, "raw_markdown", md_obj) or "")
+            fit_md = str(getattr(md_obj, "fit_markdown", "") or "")
+            markdown = fit_md if len(fit_md.strip()) >= 300 else raw_md
             if len(markdown.strip()) < 100:
                 print("❌ Crawl4AI: contenuto troppo corto")
                 return None
 
-            print(f"📄 Crawl4AI: {len(markdown)} caratteri di markdown")
+            print(f"📄 Crawl4AI: {len(markdown)} caratteri (fit={len(fit_md)}, raw={len(raw_md)})")
             products = await self._ai_parse_products(markdown, url, stop_flag)
             if not products:
                 print("❌ Crawl4AI: AI non ha trovato prodotti")
