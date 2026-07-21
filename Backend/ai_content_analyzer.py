@@ -67,15 +67,19 @@ class AIContentAnalyzer:
         self.openai_api_key = os.getenv('OPENAI_API_KEY')
         self.gemini_api_key = os.getenv('GEMINI_API_KEY')
 
-       
+        # Config guidata da env (fonte unica: env.local / variabili Render)
+        # AI_PROVIDER: auto | openai | gemini  -> determina l'ordine di tentativo
+        self.ai_provider = os.getenv('AI_PROVIDER', 'auto').lower().strip()
+        self.openai_model = os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
+        self.gemini_model = os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
 
         print("🔧 AI Analyzer Init:")
 
-        print(f"   • AI_PROVIDER: auto")
+        print(f"   • AI_PROVIDER: {self.ai_provider}")
 
-        print(f"   • GEMINI_API_KEY: {'✅ Configurata' if self.gemini_api_key else '❌ Mancante'}")
+        print(f"   • GEMINI_API_KEY: {'✅ Configurata' if self.gemini_api_key else '❌ Mancante'} ({self.gemini_model})")
 
-        print(f"   • OPENAI_API_KEY: {'✅ Configurata' if self.openai_api_key else '❌ Mancante'}")
+        print(f"   • OPENAI_API_KEY: {'✅ Configurata' if self.openai_api_key else '❌ Mancante'} ({self.openai_model})")
 
 
 
@@ -824,75 +828,53 @@ Use the exact field name "products"."""
 
 
 
+    def _provider_order(self) -> list:
+        """Ordine di tentativo dei provider in base a AI_PROVIDER.
+
+        - 'gemini' -> Gemini, poi OpenAI come fallback
+        - 'openai' -> OpenAI, poi Gemini come fallback
+        - 'auto' (default) -> OpenAI (veloce/economico), poi Gemini
+        Vengono inclusi solo i provider con API key configurata.
+        """
+        providers = {
+            "openai": (self._call_openai_ai, self.openai_api_key),
+            "gemini": (self._call_gemini_ai, self.gemini_api_key),
+        }
+
+        if self.ai_provider == "gemini":
+            order = ["gemini", "openai"]
+        else:  # 'openai' e 'auto'
+            order = ["openai", "gemini"]
+
+        return [(name, providers[name][0]) for name in order if providers[name][1]]
+
     async def _call_ai_with_fallback(self, prompt: str) -> Optional[Dict[str, Any]]:
 
-        """Chiama AI con fallback: prima OpenAI (veloce), poi Gemini se fallisce"""
+        """Chiama i provider AI nell'ordine definito da AI_PROVIDER, con fallback."""
 
-        try:
+        chain = self._provider_order()
 
-            # Prima prova OpenAI (un solo tentativo)
+        if not chain:
+            print("❌ Nessuna API key AI configurata (OPENAI_API_KEY / GEMINI_API_KEY)")
+            return None
 
-            print("🤖 Tentativo OpenAI...")
+        for name, call in chain:
+            try:
+                print(f"🤖 Tentativo {name}...")
+                result = await call(prompt)
+                if result:
+                    print(f"✅ {name} ha risposto")
+                    return result
+            except Exception as e:
+                err = str(e).lower()
+                if "timeout" in err:
+                    print(f"⏰ Timeout {name} - troppo lento")
+                elif "503" in err or "429" in err:
+                    print(f"🚫 Rate limit {name}")
+                else:
+                    print(f"❌ Errore {name}: {e}")
 
-            result = await self._call_openai_ai(prompt)
-
-            if result:
-
-                print("✅ OpenAI ha risposto")
-
-                return result
-
-        except Exception as e:
-
-            print(f"❌ OpenAI fallito: {e}")
-
-            if "timeout" in str(e).lower():
-
-                print("⏰ Timeout OpenAI - troppo lento, provo Gemini...")
-
-            elif "503" in str(e) or "429" in str(e):
-
-                print("🚫 Rate limit OpenAI - provo Gemini...")
-
-            else:
-
-                print("❌ Errore generico OpenAI - provo Gemini...")
-
-
-
-        try:
-
-            # Fallback a Gemini
-
-            print("🔄 Fallback a Gemini...")
-
-            result = await self._call_gemini_ai(prompt)
-
-            if result:
-
-                print("✅ Gemini ha risposto")
-
-                return result
-
-        except Exception as e:
-
-            print(f"❌ Gemini fallito: {e}")
-
-            if "timeout" in str(e).lower():
-
-                print("⏰ Timeout Gemini - troppo lento")
-
-            elif "503" in str(e) or "429" in str(e):
-
-                print("🚫 Rate limit Gemini")
-
-            else:
-
-                print("❌ Errore generico Gemini")
-
-
-
-        print("❌ Entrambe le AI hanno fallito")
+        print("❌ Tutti i provider AI hanno fallito")
 
         print("🔄 Fallback a scraping generico...")
 
@@ -920,7 +902,7 @@ Use the exact field name "products"."""
 
             payload = {
 
-                "model": "gpt-4o-mini",
+                "model": self.openai_model,
 
                 "messages": [
                     {"role": "system", "content": "You are a data extraction expert. Return ONLY valid JSON. Never add explanations or comments."},
@@ -1058,7 +1040,7 @@ Use the exact field name "products"."""
 
            
 
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_api_key}"
 
 
 

@@ -1001,7 +1001,7 @@ async def check_api_keys():
                 "openai": {
                     "configured": bool(openai_key),
                     "key_preview": openai_key[:10] + "..." if openai_key else "Non configurata",
-                    "model": os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+                    "model": os.getenv("OPENAI_MODEL", "gpt-4o-mini")
                 },
                 "gemini": {
                     "configured": bool(gemini_key),
@@ -1181,6 +1181,72 @@ async def search_historical_products(
             "statistics": {}
         }
 
+
+
+@app.get("/historical-products/export")
+async def export_historical_products(
+    format: str = "csv",
+    product_name: str = None,
+    site: str = None,
+    date: str = None,
+    brand: str = None,
+    sources: str = None,
+    limit: int = 10000,
+):
+    """Esporta i prodotti storici (stessi filtri di /historical-products) come CSV o JSON scaricabile."""
+    import csv
+    import io
+    from fastapi.responses import Response
+
+    fmt = (format or "csv").lower().strip()
+    if fmt not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format deve essere 'csv' o 'json'")
+
+    filters = {"limit": limit}
+    if product_name:
+        filters["product_name"] = product_name
+    if site:
+        filters["site"] = site
+    if date:
+        filters["date"] = date
+    if brand:
+        filters["brand"] = brand
+    if sources:
+        filters["sources"] = [s.strip() for s in sources.split(",") if s.strip()]
+
+    result = await historical_db.search_historical_products(filters)
+    if not result.get("success"):
+        raise HTTPException(status_code=500, detail=result.get("error", "Errore ricerca"))
+
+    products = result.get("products", [])
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    if fmt == "json":
+        return Response(
+            content=json.dumps(products, ensure_ascii=False, indent=2),
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="prodotti_{ts}.json"'},
+        )
+
+    # CSV: colonne = unione ordinata delle chiavi presenti
+    columns = []
+    for p in products:
+        for k in p.keys():
+            if k not in columns:
+                columns.append(k)
+
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=columns, extrasaction="ignore")
+    writer.writeheader()
+    for p in products:
+        writer.writerow({k: p.get(k, "") for k in columns})
+
+    # BOM UTF-8: Excel apre correttamente gli accenti
+    return Response(
+        content="﻿" + buffer.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="prodotti_{ts}.csv"'},
+    )
 
 
 @app.get("/dashboard-stats")
