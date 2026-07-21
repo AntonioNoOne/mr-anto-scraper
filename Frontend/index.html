@@ -7,7 +7,7 @@
     <!-- Asset self-hosted (nessuna CDN): Tailwind buildato+purgato, poi override custom -->
     <link href="/static/css/tailwind.build.css?v=2" rel="stylesheet">
     <link href="/static/vendor/fontawesome/css/all.min.css" rel="stylesheet">
-    <link href="/static/css/styles.css?v=3" rel="stylesheet">
+    <link href="/static/css/styles.css?v=4" rel="stylesheet">
     <script src="/static/vendor/vue.global.prod.js"></script>
     <script src="/static/vendor/axios.min.js"></script>
     <script src="/static/vendor/chart.umd.js"></script>
@@ -304,9 +304,9 @@
                                 <h4 class="text-md font-semibold">Progresso Scraping</h4>
                                 <div v-for="(progress, index) in genericScrapingProgress" :key="index" 
                                      class="bg-gray-800 rounded-lg p-4">
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-sm font-medium truncate">{{ progress.url }}</span>
-                                        <div class="flex items-center space-x-2">
+                                    <div class="flex justify-between items-center mb-2 gap-3">
+                                        <span class="text-sm font-medium scrape-progress-url">{{ progress.url }}</span>
+                                        <div class="flex items-center space-x-2 scrape-progress-status">
                                             <span v-if="progress.status === 'processing'" class="text-xs text-blue-300">
                                                 <i class="fas fa-cog fa-spin mr-1"></i>Elaborazione...
                                             </span>

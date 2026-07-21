@@ -829,6 +829,20 @@ input[type="text"], input[type="url"], input:not([type]), textarea, select {
     white-space: nowrap;
 }
 
+/* --- Card progresso scraping: URL tronca, badge stato non si schiaccia --- */
+.scrape-progress-url {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.scrape-progress-status {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+.scrape-progress-status > * { white-space: nowrap; }
+
 /* --- Micro-interazioni (polish): feedback su pressione bottoni --- */
 .btn-primary, .btn-secondary, .btn-danger {
     transition: transform 0.12s cubic-bezier(0.22,1,0.36,1), filter 0.15s, box-shadow 0.15s;
