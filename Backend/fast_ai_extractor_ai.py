@@ -15,6 +15,60 @@ from fast_ai_extractor_config import (
 class _AiSelectorMixin:
     """Auto-apprendimento/suggerimento selettori via AI, gestione proxy e browser."""
 
+    async def _extract_via_jina_reader(self, url: str, stop_flag: Optional[Dict] = None) -> Optional[Dict[str, Any]]:
+        """Fallback estrazione via Jina Reader (r.jina.ai).
+
+        Servizio cloud che fetcha e renderizza la pagina lato server e restituisce
+        markdown pulito pronto per LLM: bypassa rendering JS e spesso l'anti-bot,
+        senza browser locale ne' Ollama. Il markdown viene passato all'AI parser
+        cloud esistente (_ai_parse_products). Ritorna None se non trova prodotti,
+        cosi' il chiamante puo' fare fallback al risultato del browser.
+        """
+        try:
+            print(f"🪄 Fallback Jina Reader per {url}")
+            headers = {
+                "X-Return-Format": "markdown",
+                "User-Agent": "Mozilla/5.0",
+            }
+            # API key opzionale: alza i rate limit (keyless funziona comunque)
+            jina_key = os.getenv("JINA_API_KEY")
+            if jina_key:
+                headers["Authorization"] = f"Bearer {jina_key}"
+
+            jina_url = f"https://r.jina.ai/{url}"
+            timeout = aiohttp.ClientTimeout(total=90)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(jina_url, headers=headers) as resp:
+                    if resp.status != 200:
+                        print(f"❌ Jina Reader: HTTP {resp.status}")
+                        return None
+                    markdown = await resp.text()
+
+            if not markdown or len(markdown.strip()) < 100:
+                print("❌ Jina Reader: contenuto troppo corto")
+                return None
+
+            print(f"📄 Jina Reader: {len(markdown)} caratteri di markdown")
+            products = await self._ai_parse_products(markdown, url, stop_flag)
+            if not products:
+                print("❌ Jina Reader: AI non ha trovato prodotti")
+                return None
+
+            print(f"✅ Jina Reader: {len(products)} prodotti estratti")
+            return {
+                "success": True,
+                "products": products,
+                "error": None,
+                "total_found": len(products),
+                "containers_found": 0,
+                "container_selector": None,
+                "url": url,
+                "extraction_method": "jina_reader",
+            }
+        except Exception as e:
+            print(f"❌ Errore Jina Reader: {e}")
+            return None
+
     async def _extract_via_duckduckgo(self, url: str) -> Dict[str, Any]:
         """Estrae dati via DuckDuckGo per bypassare blocchi"""
         try:

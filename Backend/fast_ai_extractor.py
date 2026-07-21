@@ -156,9 +156,21 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
         
         # Prima prova sempre in modalità normale (veloce)
         needs_visible_browser = False
-        
+
         # Per altri siti, usa il metodo normale
-        return await self._extract_single_attempt(url, headless, needs_visible_browser, None, browser_config, stop_flag)
+        result = await self._extract_single_attempt(url, headless, needs_visible_browser, None, browser_config, stop_flag)
+
+        # Fallback Jina Reader: se il browser non ha prodotti (pagina bloccata/JS-heavy),
+        # prova a fetchare la pagina come markdown pulito lato cloud ed estrarre da lì.
+        if not result or not result.get("success") or not result.get("products"):
+            # Rispetta lo stop utente
+            if not (stop_flag and stop_flag.get("stop")):
+                jina_result = await self._extract_via_jina_reader(url, stop_flag)
+                if jina_result and jina_result.get("products"):
+                    print(f"✅ Fallback Jina Reader riuscito: {jina_result['total_found']} prodotti")
+                    return jina_result
+
+        return result
 
     def _extract_domain(self, url: str) -> str:
         """Estrae il dominio da un URL"""
