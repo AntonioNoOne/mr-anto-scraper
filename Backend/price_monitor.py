@@ -800,22 +800,41 @@ class PriceMonitor:
         return hours_since_last_check >= product.check_frequency
     
     async def _extract_current_price(self, product: MonitoredProduct) -> Optional[str]:
-        """Estrae prezzo corrente (simulato per ora)"""
+        """Estrae il prezzo corrente REALE dalla pagina del prodotto.
+
+        Fetch della URL con Crawl4AI (markdown pulito) + selezione del prezzo €
+        più vicino al nome del prodotto (gestisce pagine liste/generiche).
+        Prima era simulato con una variazione random: nessun prezzo reale.
+        """
+        url = getattr(product, "url", "") or ""
+        if not url.startswith("http"):
+            logger.warning(f"⚠️ URL non valido per {product.name}: {url}")
+            return None
+
         try:
-            # Per ora simula estrazione
-            # In futuro integrerà con fast_ai_extractor
-            await asyncio.sleep(0.1)  # Simula delay
-            
-            # Simula variazione casuale del prezzo
-            import random
-            current_price_float = float(re.sub(r'[^\d.,]', '', product.current_price).replace(',', '.'))
-            variation = random.uniform(-0.1, 0.1)  # ±10%
-            new_price = current_price_float * (1 + variation)
-            
-            return f"{new_price:.2f}€"
-            
+            from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+            from crawl4ai.content_filter_strategy import PruningContentFilter
+            from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+            from price_utils import pick_price_near_product
         except Exception as e:
-            logger.error(f"❌ Errore estrazione prezzo: {e}")
+            logger.error(f"❌ Dipendenze estrazione prezzo mancanti: {e}")
+            return None
+
+        try:
+            md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
+            cfg = CrawlerRunConfig(markdown_generator=md_gen)
+            async with AsyncWebCrawler(verbose=False) as crawler:
+                res = await crawler.arun(url=url, config=cfg)
+            md = res.markdown if res else None
+            text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
+            price = pick_price_near_product(text, product.name)
+            if not price:
+                logger.info(f"⚠️ Nessun prezzo trovato sulla pagina di {product.name}")
+                return None
+            logger.info(f"💶 Prezzo corrente {product.name}: {price}")
+            return price
+        except Exception as e:
+            logger.error(f"❌ Errore estrazione prezzo per {product.name}: {e}")
             return None
     
     def _calculate_price_change(self, old_price: str, new_price: str) -> float:

@@ -52,16 +52,22 @@ class _ParsingMixin:
         md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
         cfg = CrawlerRunConfig(markdown_generator=md_gen)
 
+        try:
+            from price_utils import pick_price_near_product
+        except Exception:
+            pick_price_near_product = None
+
         async def _fetch_price(idx):
             url = results[idx]["url"]
+            name = results[idx].get("name", "")
             try:
                 async with AsyncWebCrawler(verbose=False) as crawler:
                     res = await crawler.arun(url=url, config=cfg)
                 md = res.markdown if res else None
                 text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
-                # Primo importo in € plausibile (>= 1 euro, formato IT/EN)
-                for m in re.finditer(r'€\s?(\d[\d.]*,\d{2}|\d[\d.,]*)|(\d[\d.]*,\d{2})\s?€', text):
-                    price_str = m.group().strip()
+                # Prezzo € più vicino al nome del prodotto (gestisce pagine liste/negozio)
+                price_str = pick_price_near_product(text, name) if pick_price_near_product else None
+                if price_str:
                     val = self._extract_price_from_text(price_str)
                     if val and val >= 1:
                         return idx, price_str, val
