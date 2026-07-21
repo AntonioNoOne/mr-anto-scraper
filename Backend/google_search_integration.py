@@ -227,6 +227,10 @@ class GoogleSearchIntegration(_DuckDuckGoMixin, _BingMixin, _ParsingMixin, _Vali
             logger.info(f"✅ Risultati validati: {len(validated_results)}")
             logger.info(f"🔍 DEBUG: === FINE VALIDAZIONE ===")
 
+            # FASE 2.5: arricchimento prezzi dalle pagine venditore (i prezzi non
+            # sono negli snippet di ricerca). Fetch dei top risultati con Crawl4AI.
+            validated_results = await self._enrich_prices_from_pages(validated_results, max_pages=6)
+
             logger.info(f"🔍 DEBUG: Riepilogo risultati:")
             logger.info(f"🔍 DEBUG: - Totale trovati: {len(all_results)}")
             logger.info(f"🔍 DEBUG: - Validati: {len(validated_results)}")

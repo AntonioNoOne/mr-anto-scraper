@@ -11,6 +11,7 @@ Nessuna modifica di logica: solo spostamento.
 """
 
 import re
+import asyncio
 import logging
 from typing import Dict, List, Any, Optional
 from urllib.parse import urlparse
@@ -23,6 +24,58 @@ logger = logging.getLogger(__name__)
 
 class _ParsingMixin:
     """Metodi di parsing risultati, estrazione prezzo/sito e pulizia titoli."""
+
+    async def _enrich_prices_from_pages(self, results: List[Dict[str, Any]], max_pages: int = 6) -> List[Dict[str, Any]]:
+        """Arricchisce i risultati di ricerca col prezzo REALE dalla pagina venditore.
+
+        La ricerca (ddgs) dà URL + snippet, ma il prezzo è nella pagina: qui, per
+        i primi `max_pages` risultati senza prezzo, fetchiamo la pagina con Crawl4AI
+        (in parallelo) ed estraiamo il primo importo in € plausibile. Best-effort:
+        se il fetch fallisce, il risultato resta senza prezzo.
+        """
+        try:
+            from crawl4ai import AsyncWebCrawler, CrawlerRunConfig
+            from crawl4ai.content_filter_strategy import PruningContentFilter
+            from crawl4ai.markdown_generation_strategy import DefaultMarkdownGenerator
+        except Exception as e:
+            logger.warning(f"⚠️ Crawl4AI non disponibile per arricchimento prezzi: {e}")
+            return results
+
+        # Indici dei risultati da arricchire (senza prezzo, con URL http)
+        targets = [
+            i for i, r in enumerate(results[:max_pages])
+            if not r.get("price") and str(r.get("url", "")).startswith("http")
+        ]
+        if not targets:
+            return results
+
+        md_gen = DefaultMarkdownGenerator(content_filter=PruningContentFilter(threshold=0.48))
+        cfg = CrawlerRunConfig(markdown_generator=md_gen)
+
+        async def _fetch_price(idx):
+            url = results[idx]["url"]
+            try:
+                async with AsyncWebCrawler(verbose=False) as crawler:
+                    res = await crawler.arun(url=url, config=cfg)
+                md = res.markdown if res else None
+                text = str(getattr(md, "fit_markdown", "") or getattr(md, "raw_markdown", md) or "")
+                # Primo importo in € plausibile (>= 1 euro, formato IT/EN)
+                for m in re.finditer(r'€\s?(\d[\d.]*,\d{2}|\d[\d.,]*)|(\d[\d.]*,\d{2})\s?€', text):
+                    price_str = m.group().strip()
+                    val = self._extract_price_from_text(price_str)
+                    if val and val >= 1:
+                        return idx, price_str, val
+            except Exception as e:
+                logger.info(f"⚠️ Arricchimento prezzo fallito per {url}: {str(e)[:80]}")
+            return idx, None, 0
+
+        enriched = await asyncio.gather(*[_fetch_price(i) for i in targets])
+        for idx, price_str, val in enriched:
+            if price_str:
+                results[idx]["price"] = price_str
+                results[idx]["price_numeric"] = val
+                logger.info(f"💰 Prezzo arricchito: {results[idx].get('site','')} -> {price_str}")
+        return results
 
     def _extract_shopping_results(self, soup: BeautifulSoup, query: str) -> List[Dict[str, Any]]:
         """Estrae risultati da Google Shopping HTML"""
