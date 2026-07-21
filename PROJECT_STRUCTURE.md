@@ -1,273 +1,181 @@
-# 🧹 MR Scraper - Struttura Progetto Pulita
+# Struttura del progetto — Jusper
 
-## 📁 Struttura Principale
+Documento di architettura. Per uso/installazione vedi `README.md`, per il deploy
+vedi `DEPLOY.md`.
+
+## Layout radice
 
 ```
-mr.-anto-scraper/
-├── start.py                    # 🚀 Avvio server principale
-├── requirements.txt            # 📦 Dipendenze Python
-├── env.local                   # 🔑 API Keys (Backend/)
-├── README.md                   # 📖 Documentazione principale
-├── PROJECT_STRUCTURE.md        # 📋 Documentazione struttura
-├── Frontend/
-│   └── index.html             # 🎨 UI principale con chat AI
-└── Backend/
-    ├── main.py                # 🌐 Server FastAPI principale
-    ├── fast_ai_extractor.py   # ⚡ Sistema estrazione principale
-    ├── ai_content_analyzer.py # 🤖 AI per analisi contenuti
-    ├── ai_product_comparator.py # 🧠 AI per confronto prodotti
-    ├── google_search_integration.py # 🔍 Ricerca venditori alternativi
-    ├── chat_ai_manager.py     # 💬 Gestione chat AI
-    ├── product_comparator.py  # 🔄 Confronto prodotti (fallback)
-    ├── selector_database.py   # 🗄️ Database selettori ottimali
-    ├── selector_database.json # 💾 File database selettori
-    ├── env.local              # 🔑 API Keys
-    └── future_implementations/ # 🔮 Script per implementazioni future
-        ├── price_monitor.py
-        ├── price_scheduler.py
-        ├── google_price_finder.py
-        ├── google_vision_finder.py
-        ├── cache_manager.py
+mr-anto-scraper/
+├── Backend/                 # API FastAPI + logica scraping/AI
+├── Frontend/                # SPA Vue 3 (asset self-hosted, no CDN)
+├── data/
+│   ├── database/            # SQLite: historical_products.db, selector_database.db
+│   └── api_extracts/        # estrazioni salvate (JSON)
+├── config/guard.json        # regole del project guard
+├── scripts/                 # tooling guard/checkpoint (project_guard.py, ...)
+├── .githooks/               # hook git che eseguono il guard
+├── .github/workflows/       # keep-alive.yml (anti cold-start Render)
+├── docs/                    # documentazione interna
+├── Dockerfile, render.yaml  # deploy Render (Docker)
+├── requirements.txt         # dipendenze Python (Backend/requirements.txt vi rimanda)
+├── start.py                 # launcher alternativo (uvicorn)
+└── README.md, DEPLOY.md, PROJECT_STRUCTURE.md
 ```
 
-## 🗂️ Cartella "vecchio/"
+I file sorgente sono tenuti sotto ~900 righe: il **project guard**
+(`config/guard.json` + `scripts/` + hook in `.githooks/`) blocca i file oltre 1000
+righe e verifica la presenza di file/sezioni richiesti. Per questo i moduli grandi
+sono divisi in mixin/router (vedi sotto).
 
-Contiene file obsoleti organizzati per categoria:
+## Backend/
 
-### obsolete_scrapers/
-- `mr_anto_scraper.py` - Sostituito da main.py + fast_ai_extractor.py
-- `html_extractor_improved.py` - Sostituito da fast_ai_extractor.py
-- `progressive_scraper.py` - Sostituito da fast_ai_extractor.py
-- `html_analyzer.py` - Sostituito da ai_content_analyzer.py
-- `llm_enhanced_analyzer.py` - Sostituito da ai_content_analyzer.py
-- `llm_scraper_bridge.py` - Sostituito da fast_ai_extractor.py
-- `price_extractor.py` - Funzionalità integrata in fast_ai_extractor.py
-- `playwright_selector_finder.py` - Funzionalità integrata
-- `utils.py` - Funzionalità integrate nei moduli principali
+### Entry point e infrastruttura
 
-### node_js/
-- `package.json` - Progetto Node.js non necessario
-- `package-lock.json` - Dipendenze Node.js
-- `node_modules/` - Moduli Node.js
-- `install_llm_scraper.py` - Installazione Node.js
-- `llm_scraper_scripts/` - Script Node.js
+- **`main.py`** — costruisce l'app FastAPI, configura CORS e `StaticFiles`, monta il
+  frontend, definisce gli endpoint infrastrutturali (`/`, `/health`, `/api`,
+  `/debug/static-files`, static JS/CSS) e include tutti i router. Nello `startup`
+  istanzia i componenti in `app_state` e avvia lo scheduler prezzi. Riconfigura
+  `stdout`/`stderr` in UTF-8 (fix console Windows).
+- **`app_state.py`** — stato condiviso (single source of truth): istanze di
+  extractor, comparator, chat manager, selector DB, google search, historical DB,
+  price monitor, price scheduler. I router leggono da qui.
+- **`models.py`** — modelli Pydantic di request/response (es. `ExtractResponse`,
+  `CompareResponse`, `ChatResponse`).
+- **`env.local`** (gitignored) / **`env.local.example`** — configurazione ambiente.
 
-### debug/
-- `test_import.py` - File di test temporaneo
-- `ai_content_analyzer_backup.py` - Backup precedente
+### Router (`Backend/routers/`)
 
-## 🎯 File Essenziali
+Ogni router raggruppa endpoint per area; `main.py` li include tutti.
 
-### Core System
-- **`start.py`** - Avvia il server con uvicorn
-- **`Backend/main.py`** - Server FastAPI con tutti gli endpoint
-- **`Backend/fast_ai_extractor.py`** - Sistema di estrazione intelligente
-- **`Backend/ai_content_analyzer.py`** - AI per analisi contenuti
-- **`Backend/ai_product_comparator.py`** - AI per confronto prodotti semantico
-- **`Backend/google_search_integration.py`** - Ricerca venditori alternativi
-- **`Backend/chat_ai_manager.py`** - Gestione chat con OpenAI/Gemini/Ollama
-- **`Backend/product_comparator.py`** - Confronto prodotti testuale (fallback)
-- **`Backend/selector_database.py`** - Database selettori ottimali
+- **`extraction.py`** — `POST /fast-extract`, `POST /fast-extract-multiple`,
+  `POST /stop-scraping`
+- **`comparison.py`** — `POST /compare-products`, `POST /compare-prices`,
+  `POST /test-ai-comparator`
+- **`chat.py`** — `POST /chat`, `GET /chat/models`, `GET /chat/test`, `GET /chat/keys`
+- **`selectors.py`** — `GET /selectors/stats`, `GET /selectors/pending`,
+  `POST /selectors/approve/{domain}`, `DELETE /selectors/{domain}`
+- **`monitoring.py`** — `POST /monitoring/add-product`, `GET /monitoring/products`,
+  `GET /monitoring/price-history/{product_id}`, `GET /monitoring/alerts`,
+  `POST /monitoring/alerts/{alert_id}/read`, `DELETE /monitoring/products/{product_id}`,
+  `POST /monitoring/check-prices`, `GET /monitoring/stats`
+- **`scheduler.py`** — `POST /scheduler/start`, `POST /scheduler/stop`,
+  `GET /scheduler/stats`, `POST /scheduler/force-check/{product_id}`
+- **`history.py`** — `GET /historical-products`,
+  `GET /historical-products/export` (`?format=csv|json`), `GET /dashboard-stats`,
+  `GET /site-statistics`, `POST /google-search`, `GET /google-search-results`,
+  `GET /extraction-sessions/recent`, `GET /products/categories/stats`,
+  `GET /sites/performance/stats`, `POST` e `GET /api/browser-config`
 
-### Frontend
-- **`Frontend/index.html`** - UI completa con chat AI integrata
+### Pipeline di estrazione
 
-### Configurazione
-- **`requirements.txt`** - Dipendenze Python
-- **`Backend/env.local`** - API keys per OpenAI, Gemini, etc.
+Composta da `fast_ai_extractor.py` (classe `FastAIExtractor`) più i mixin:
 
-## 🗄️ Database Selettori (FASE 1 ✅)
+- `fast_ai_extractor_config.py` — costanti (liste anti-bot, args browser)
+- `fast_ai_extractor_extraction.py` — `_extract_single_attempt` (browser custom con
+  selettori dal DB)
+- `fast_ai_extractor_ai.py` — `_extract_via_crawl4ai` (fetcher primario) e
+  `_extract_via_jina_reader` (fallback cloud)
+- `fast_ai_extractor_parsing.py` — `_ai_parse_products`: chunking del markdown +
+  chiamate AI in parallelo (`asyncio.gather`); il prompt inferisce brand/model/specs
+  dal nome e distingue real-estate vs e-commerce con match a parola intera
+- `fast_ai_extractor_selectorflow.py` — flusso di selezione/salvataggio selettori
 
-### Funzionalità Implementate:
-- ✅ **Salvataggio automatico** selettori che funzionano bene
-- ✅ **Riutilizzo intelligente** selettori salvati per siti noti
-- ✅ **Sistema di approvazione** manuale per selettori
-- ✅ **Tracking performance** e success rate
-- ✅ **Fallback automatico** a selettori generici
-- ✅ **API endpoints** per gestione selettori
+Ordine dei fetcher (in `fast_ai_extractor.py`):
 
-### Endpoints Selettori:
-- `GET /selectors/stats` - Statistiche database selettori
-- `GET /selectors/pending` - Selettori in attesa approvazione
-- `POST /selectors/approve/{domain}` - Approva selettori per dominio
-- `DELETE /selectors/{domain}` - Elimina selettori per dominio
+1. **Crawl4AI** (primario) — `AsyncWebCrawler` + stealth, produce `fit_markdown`
+   ripulito, poi passato al parser AI (Gemini/OpenAI).
+2. **Browser custom** (fallback) — selettori dal database, `_extract_single_attempt`.
+3. **Jina Reader** (fallback cloud) — `r.jina.ai`.
 
-### Flusso di Lavoro:
-1. **Prima estrazione**: Usa selettori generici e salva quelli che funzionano
-2. **Estrazioni successive**: Usa selettori salvati per velocità e accuratezza
-3. **Approvazione manuale**: Utente può approvare selettori salvati
-4. **Tracking performance**: Sistema monitora success rate dei selettori
+Moduli AI di supporto: `ai_content_analyzer.py` + mixin
+(`ai_content_analyzer_providers.py` gestisce ordine provider e fallback OpenAI/Gemini
+via HTTP; `_browser`, `_parsing`, `_pipeline`).
 
-## 🧠 AI Product Comparator (FASE 2 ✅)
+### Ricerca venditori
 
-### Funzionalità Implementate:
-- ✅ **Analisi semantica AI** per confronto prodotti
-- ✅ **Normalizzazione intelligente** nomi, prezzi, brand
-- ✅ **Clustering automatico** prodotti simili
-- ✅ **Calcolo statistiche prezzo** avanzate
-- ✅ **Fallback testuale** se AI non disponibile
-- ✅ **Score di similarità** 0-1 per ogni gruppo
-- ✅ **Differenze prezzo** e opportunità di risparmio
+`google_search_integration.py` (classe `GoogleSearchIntegration`) + mixin:
 
-### Caratteristiche Avanzate:
-- **Analisi AI diretta**: Per gruppi piccoli (≤20 prodotti)
-- **Analisi AI per gruppi**: Per grandi dataset con merge intelligente
-- **Normalizzazione robusta**: Gestione separatori decimali, valute, stop words
-- **Statistiche dettagliate**: Min/max/avg prezzo, varianza, differenze percentuali
-- **Opportunità di risparmio**: Calcolo automatico potenziali risparmi
+- `google_search_duckduckgo.py` — **strategia 1**: libreria `ddgs` (no browser)
+- `google_search_bing.py` — fallback Bing Shopping + ricerca diretta e-commerce
+- `google_search_parsing.py` — parsing dei risultati
+- `google_search_validation.py` — filtro domini junk (social/forum/esteri) e scoring
 
-### Vantaggi vs Sistema Testuale:
-- 🎯 **Accuratezza superiore**: Identifica prodotti simili anche con nomi diversi
-- 🧠 **Comprensione semantica**: Capisce sinonimi e variazioni linguistiche
-- 📊 **Analisi più ricca**: Statistiche prezzo e clustering intelligente
-- 🔄 **Fallback robusto**: Sistema testuale come backup
+L'arricchimento prezzi fa fetch delle prime ~10 pagine venditore con Crawl4AI e
+seleziona il prezzo con `price_utils.pick_price_near_product`.
 
-## 🔍 Google Search Integration (FASE 3 ✅)
+### Monitoraggio prezzi
 
-### Funzionalità Implementate:
-- ✅ **Ricerca automatica** venditori alternativi
-- ✅ **Query intelligenti** generate automaticamente
-- ✅ **Ricerca Google Shopping** per prezzi diretti
-- ✅ **Ricerca Google Web** per siti e-commerce
-- ✅ **Validazione risultati** con score di rilevanza
-- ✅ **Estrazione prodotti** dai siti trovati
-- ✅ **Confronto prezzi** con prodotto originale
-- ✅ **Identificazione migliori offerte**
+- `price_monitor.py` (`PriceMonitor`) — aggiunge prodotti al monitoring, esegue
+  `check_price_changes`, salva alert al superamento della soglia. Il prezzo corrente
+  è **reale**: `_extract_current_price` usa Crawl4AI + `pick_price_near_product`.
+- `price_scheduler.py` (`PriceScheduler`) — check periodici, avviato nello startup.
 
-### Caratteristiche Avanzate:
-- **Generazione query ottimizzate**: Basate su nome, brand, prezzo
-- **Ricerca multi-fonte**: Google Shopping + Google Web
-- **Filtro siti e-commerce**: Solo siti di vendita validi
-- **Score di validazione**: Rilevanza risultati 0-1
-- **Estrazione automatica**: Usa fast_ai_extractor sui siti trovati
-- **Confronto AI**: Usa ai_product_comparator per analisi semantica
-- **Identificazione offerte**: Trova automaticamente le migliori offerte
+### Estrazione prezzo condivisa
 
-### Vantaggi:
-- 🔍 **Scoperta automatica**: Trova venditori non considerati
-- 📊 **Confronti completi**: Analisi prezzo più ampia
-- 🎯 **Offerte migliori**: Identifica automaticamente i migliori prezzi
-- 🧠 **Analisi intelligente**: Usa AI per confronti semantici
-- ⚡ **Performance ottimizzate**: Rate limiting e caching
+`price_utils.py` — `pick_price_near_product(text, name)`: tra i molti prezzi € di una
+pagina sceglie quello testualmente più vicino alle keyword del nome prodotto.
 
-## 🔮 Future Implementations
+### Confronto e storico
 
-Script pronti per implementazioni future:
+- `ai_product_comparator.py` + `ai_product_comparator_ai.py` — confronto semantico AI
+  (clustering prodotti simili, statistiche prezzo, opportunità di risparmio).
+- `historical_products_db.py` + mixin (`_helpers`, `_save`, `_search`, `_stats`) —
+  storage SQLite dei prodotti estratti e statistiche.
+- `selector_database.py` (+ `selector_database.json`, `init_selectors.py`,
+  `init_default_selectors.py`) — database dei selettori CSS per dominio.
+- `chat_ai_manager.py` — gestione della chat AI.
 
-- **`price_monitor.py`** - Monitoraggio prezzi nel tempo
-- **`price_scheduler.py`** - Schedulazione controlli prezzi
-- **`google_price_finder.py`** - Ricerca prezzi su Google
-- **`google_vision_finder.py`** - Analisi immagini con Google Vision
-- **`cache_manager.py`** - Gestione cache per performance
+### Supporto scraping
 
-## 🚀 Avvio Progetto
+`proxy_manager.py`, `proxy_updater.py`, `captcha_handler.py`, `backup_manager.py`,
+`clean_database.py`.
 
-```bash
-# Avvio normale
-python start.py
+### `Backend/future_implementations/`
 
-# Avvio senza browser
-python start.py --no-browser
+Copie/prototipi non montati nell'app (`cache_manager.py`, `google_price_finder.py`,
+`google_vision_finder.py`, e versioni precedenti di `price_monitor`/`price_scheduler`).
 
-# Avvio con auto-reload (sviluppo)
-python start.py --reload
+## Frontend/
 
-# Avvio su porta specifica
-python start.py --port 8080
+SPA Vue 3 con template inline in `index.html` e logica modulare in `js/`. Nessun CDN:
+tutti gli asset sono in `vendor/`.
+
+```
+Frontend/
+├── index.html              # markup + template Vue (options API)
+├── vendor/                 # asset self-hosted: vue.global.prod.js, axios.min.js,
+│                           #   chart.umd.js, fontawesome/
+├── css/
+│   ├── styles.css          # CSS custom (responsive <1200px, sotto-tab)
+│   ├── tailwind.entry.css  # sorgente Tailwind
+│   └── tailwind.build.css  # output buildato/purgato (npm run build:css)
+├── js/
+│   ├── config.js           # configurazione (base URL API, costanti)
+│   ├── api.js              # wrapper axios verso il backend
+│   ├── store.js            # stato Vue
+│   ├── store.methods.js    # metodi dello store
+│   ├── store.init.js       # inizializzazione
+│   ├── charts.js           # grafici Chart.js
+│   └── actions.js          # azioni UI
+├── scripts/vendor.mjs      # scarica/aggiorna i vendor (npm run vendor)
+├── package.json, package-lock.json
+├── tailwind.config.js, postcss.config.js
+└── node_modules/           # solo per build (non servito)
 ```
 
-## 🌐 Endpoints API
+Interfaccia: sidebar con **3 sezioni**:
 
-### Estrazione e Confronto
-- `POST /fast-extract` - Estrazione singola URL
-- `POST /fast-extract-multiple` - Estrazione multipla URL
-- `POST /compare-products` - Confronto prodotti AI semantico
-- `POST /compare-prices` - Confronto prezzi da dati salvati
-- `POST /test-ai-comparator` - Test sistema AI
-- `POST /google-search` - Ricerca venditori alternativi
+- **Dashboard** — statistiche e grafici.
+- **Estrazione** — sotto-tab: *Scraping URL* / *Ricerca Google* / *Confronto*.
+- **Impostazioni & Monitoraggio** — sotto-tab: *Monitoraggio* / *Configurazione*.
 
-### Chat AI
-- `POST /chat` - Chat con AI
-- `GET /chat/models` - Modelli AI disponibili
-- `GET /chat/test` - Test connessioni AI
-- `GET /chat/keys` - Status API keys
+Layout responsive. Tailwind è v2 (build locale in `tailwind.build.css`), gli stili
+custom e le regole responsive stanno in `styles.css`.
 
-### Database Selettori
-- `GET /selectors/stats` - Statistiche selettori
-- `GET /selectors/pending` - Selettori in attesa
-- `POST /selectors/approve/{domain}` - Approva selettori
-- `DELETE /selectors/{domain}` - Elimina selettori
+## Deploy (sintesi)
 
-### Utility
-- `GET /health` - Health check
-- `GET /` - Pagina principale
-- `GET /api` - Info API
-
-## ✅ Implementazioni Completate
-
-### FASE 1: Database Selettori ✅
-- ✅ Integrato `selector_database.py` nel sistema principale
-- ✅ Modificato `fast_ai_extractor.py` per usare selettori salvati
-- ✅ Aggiunto sistema di fallback a selettori generici
-- ✅ Implementato salvataggio automatico selettori funzionanti
-- ✅ Aggiunto tracking performance e success rate
-- ✅ Creati endpoint API per gestione selettori
-- ✅ Sistema di approvazione manuale selettori
-
-### FASE 2: AI Product Comparator ✅
-- ✅ Creato `ai_product_comparator.py` con analisi semantica AI
-- ✅ Integrato con `ai_content_analyzer.py` e `chat_ai_manager.py`
-- ✅ Modificato endpoint `/compare-products` per usare AI
-- ✅ Implementato sistema di normalizzazione intelligente
-- ✅ Aggiunto clustering automatico prodotti simili
-- ✅ Calcolo statistiche prezzo avanzate
-- ✅ Sistema di fallback al confronto testuale
-- ✅ Endpoint di test `/test-ai-comparator`
-
-### FASE 3: Google Search Integration ✅
-- ✅ Creato `google_search_integration.py` per ricerca venditori alternativi
-- ✅ Integrato con `fast_ai_extractor.py` e `ai_product_comparator.py`
-- ✅ Implementato generazione query di ricerca intelligenti
-- ✅ Aggiunto ricerca Google Shopping e Google Web
-- ✅ Sistema di validazione risultati con score di rilevanza
-- ✅ Estrazione automatica prodotti dai siti trovati
-- ✅ Confronto prezzi con AI Product Comparator
-- ✅ Identificazione automatica migliori offerte
-- ✅ Endpoint `/google-search` per ricerca venditori alternativi
-
-### Vantaggi Ottenuti:
-- 🚀 **Performance migliorata**: Estrazione più veloce per siti noti
-- 🎯 **Accuratezza aumentata**: Selettori ottimizzati per ogni sito
-- 🧠 **Intelligenza semantica**: Confronto prodotti con AI
-- 🔍 **Scoperta automatica**: Trova venditori alternativi automaticamente
-- 📊 **Apprendimento continuo**: Sistema migliora con l'uso
-- 🔧 **Gestione flessibile**: Approvazione e modifica selettori
-- 📈 **Monitoraggio avanzato**: Statistiche performance e prezzi
-- 💰 **Risparmio automatico**: Identifica le migliori offerte
-
-## 🎯 Prossimi Passi
-
-### FASE 4: Price Monitoring & Scheduling (IN CORSO)
-- [ ] Integrare `price_monitor.py` e `price_scheduler.py`
-- [ ] Database storico prezzi con SQLite
-- [ ] Sistema di alert e notifiche email
-- [ ] Dashboard monitoraggi in tempo reale
-- [ ] Schedulazione automatica controlli prezzi
-- [ ] Analisi trend prezzi nel tempo
-
-### FASE 5: Advanced Analytics
-- [ ] Analisi competitor e strategie prezzo
-- [ ] Predizione variazioni prezzo con ML
-- [ ] Dashboard analytics avanzate
-- [ ] Report automatici e export dati
-- [ ] Integrazione con Google Vision per analisi immagini
-
-## 📊 Statistiche Progetto
-
-- **File essenziali**: 9 file core
-- **File obsoleti**: 9 file spostati in vecchio/
-- **Script future**: 5 script pronti per implementazione
-- **Endpoint API**: 17+ endpoint disponibili
-- **Database**: 1 database selettori attivo
-- **Sistemi AI**: 4 sistemi AI integrati (estrazione, confronto, chat, ricerca)
-- **Funzionalità**: Estrazione, confronto AI, chat AI, database selettori, ricerca Google 
+`render.yaml` + `Dockerfile` costruiscono l'immagine su Render partendo da
+`mcr.microsoft.com/playwright/python`; il Chromium dell'immagine è riusato anche da
+Crawl4AI. Env vars su Render: `OPENAI_API_KEY`, `GEMINI_API_KEY` (opz. `JINA_API_KEY`).
+Dettagli e limiti free tier in `DEPLOY.md`.

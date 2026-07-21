@@ -1,248 +1,107 @@
-# 🚀 Jusper - AI-Powered E-commerce Scraper
+# Jusper — AI E-commerce Scraper
 
-**Jusper** (ex Mr. Anto Scraper) è un sistema avanzato di web scraping per e-commerce con analisi AI integrata, dashboard in tempo reale e **il nuovo sistema AI-Assisted per scraping guidato**.
+**Jusper** (ex Mr. Anto Scraper) è un web scraper per e-commerce con analisi AI:
+estrae prodotti e prezzi da qualsiasi pagina, cerca venditori alternativi,
+confronta i prezzi e monitora le variazioni nel tempo. Backend FastAPI (Python),
+frontend Vue 3, deploy su Render via Docker.
 
-## 🤖 **NUOVO**: AI-Assisted Scraper
+## Cosa fa
 
-**Sistema rivoluzionario** che utilizza l'AI per guidarti nel processo di scraping!
+- **Estrazione prodotti** da URL singole o multiple (nome, prezzo, brand, specifiche).
+- **Ricerca venditori** alternativi per un prodotto e arricchimento con i prezzi reali.
+- **Confronto prezzi** semantico tra prodotti simili di siti diversi.
+- **Monitoraggio prezzi** con check periodici e alert al superamento di una soglia.
+- **Storico prodotti** con dashboard, statistiche ed export CSV/JSON.
+- **Chat AI** integrata sui dati raccolti.
 
-### 🎯 Come Funziona:
-1. **📍 Inserisci URL** → L'AI analizza automaticamente la pagina
-2. **🧠 Analisi Intelligente** → "Cosa vuoi scrapare? Ho trovato questi elementi..."
-3. **⚙️ Schema Personalizzato** → Definisci cosa estrarre in formato JSON
-4. **✅ Validazione & Estrazione** → Risultati automatici con export!
+## Stack
 
-### 🌟 Caratteristiche AI-Assisted:
-- **Analisi AI automatica** del contenuto delle pagine web
-- **Suggerimenti intelligenti** su cosa si può estrarre
-- **Validazione schema** in tempo reale
-- **Interfaccia step-by-step** intuitiva
-- **Export automatico** in JSON/CSV
+- **Backend**: FastAPI + Uvicorn, Pydantic. Fetch pagine con **Crawl4AI**
+  (browser Chromium + stealth) e Playwright; ricerca con la libreria **ddgs**
+  (ex duckduckgo-search) e fallback Bing/browser; parsing HTML con BeautifulSoup.
+- **AI cloud**: **Gemini** (default `gemini-2.5-flash`) e **OpenAI**
+  (default `gpt-4o-mini`). Selezione via env `AI_PROVIDER` (`auto` | `gemini` |
+  `openai`); in `auto` prova prima OpenAI poi Gemini come fallback. Le API sono
+  chiamate via **HTTP diretto** (`requests`/`aiohttp`) — nessun SDK.
+- **Frontend**: Vue 3 (options API, template inline in `index.html`). Asset
+  self-hosted in `Frontend/vendor/` (Vue, axios, Chart.js, Font Awesome), **nessun
+  CDN**. Tailwind CSS v2 buildato e purgato in locale.
+- **Persistenza**: SQLite in `data/database/` (storico prodotti, selettori).
+- **Deploy**: Render (Docker, immagine `playwright/python`).
 
-### 🚀 Accesso Rapido:
-- **Interfaccia AI-Assisted**: Apri `Frontend/ai-assisted-scraper.html`
-- **Test del Sistema**: `python Backend/test_ai_assisted.py`
+## Prerequisiti
 
-## ✨ Caratteristiche Principali
+- Python 3.12+ e Chromium via Playwright.
+- Chiavi AI (almeno una tra OpenAI e Gemini) per estrazione/chat.
+- Node.js solo se vuoi ri-buildare il CSS Tailwind / ri-scaricare i vendor.
 
-- 🤖 **Analisi AI Avanzata** - Supporto per Gemini, GPT-4 e analisi locale
-- 🔗 **LLM Scraper Integration** - Integrazione con [llm-scraper](https://github.com/mishushakov/llm-scraper) per scraping avanzato
-- 📊 **Dashboard in Tempo Reale** - Statistiche live e metriche di performance  
-- 🎯 **Scraping Intelligente** - Estrazione automatica di prodotti e prezzi
-- 💾 **Persistenza Dati** - Salvataggio automatico in database SQLite
-- 🔄 **Modalità Batch** - Elaborazione di URL multipli
-- 📱 **UI Moderna** - Interfaccia Vue.js responsive e intuitiva
-- 🚀 **Architettura Asincrona** - Performance ottimizzate con async/await
-- ⚖️ **Sistema di Confronto Avanzato** - Confronto intelligente tra prodotti di siti diversi
-- 🌐 **Filtri Dinamici** - Selezione multipla di domini per confronti mirati
+## Configurazione
 
-## 🛠️ Installazione Rapida
+Le chiavi stanno in `Backend/env.local` (gitignored). Copia il template e inserisci
+le tue chiavi:
 
-### 1. Clona il Repository
 ```bash
-git clone https://github.com/tuo-username/jusper.git
-cd jusper
+cp Backend/env.local.example Backend/env.local
 ```
 
-### 2. Installa le Dipendenze
+Variabili principali (vedi `env.local.example`):
+
+- `AI_PROVIDER` — `auto` (default) | `gemini` | `openai`
+- `OPENAI_API_KEY`, `OPENAI_MODEL` (default `gpt-4o-mini`)
+- `GEMINI_API_KEY`, `GEMINI_MODEL` (default `gemini-2.5-flash`)
+- opzionale: `JINA_API_KEY` (fallback Jina Reader)
+
+## Esecuzione in locale
+
 ```bash
+python -m venv .venv
+.venv\Scripts\activate          # Windows (Linux/macOS: source .venv/bin/activate)
 pip install -r requirements.txt
-```
-
-### 3. Configura le Variabili d'Ambiente
-```bash
-# Copia il file di esempio
-cp Backend/env.local Backend/env.local.backup
-
-# Modifica Backend/env.local con le tue API keys
-```
-
-### 4. Avvia il Server
-```bash
-python start.py
-```
-
-Apri http://localhost:8000 nel browser! 🎉
-
-## 🚀 Deploy su Railway (Hosting Gratuito)
-
-### Deploy con Un Click
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/jusper)
-
-### Deploy Manuale
-1. Crea account su [Railway.app](https://railway.app)
-2. Connetti il tuo repository GitHub
-3. Configura le variabili d'ambiente:
-   - `AI_PROVIDER=local` (o gemini/openai)
-   - `GEMINI_API_KEY=tua_key` (se usi Gemini)
-   - `OPENAI_API_KEY=tua_key` (se usi OpenAI)
-4. Deploy automatico! ✨
-
-## ⚙️ Configurazione AI
-
-### Modalità Locale (Gratuita)
-```bash
-AI_PROVIDER=local
-```
-- ✅ Nessuna API key richiesta
-- ✅ Completamente gratuito
-- ✅ Privacy totale
-
-### Modalità Gemini (Consigliata)
-```bash
-AI_PROVIDER=gemini
-GEMINI_API_KEY=your_api_key
-```
-- 🚀 Analisi più precisa
-- 💰 Tier gratuito generoso
-- 🔗 [Ottieni API Key](https://makersuite.google.com/app/apikey)
-
-### Modalità OpenAI
-```bash
-AI_PROVIDER=openai
-OPENAI_API_KEY=your_api_key
-```
-- 🎯 Massima precisione
-- 💵 A pagamento
-- 🔗 [Ottieni API Key](https://platform.openai.com/api-keys)
-
-## 📊 Dashboard Features
-
-- **Statistiche Giornaliere** - Prodotti scansionati, accuratezza AI
-- **Attività Recenti** - Log in tempo reale delle operazioni
-- **Categorie Prodotti** - Classificazione automatica
-- **Metriche Performance** - Tempi di risposta e ottimizzazioni
-- **Reset Giornaliero** - Statistiche che si resettano ogni 24h
-
-## 🔧 Utilizzo
-
-### Scraping Singolo URL
-1. Inserisci l'URL del sito e-commerce
-2. Seleziona il provider AI
-3. Clicca "Avvia Scraping"
-4. Visualizza i risultati nella dashboard
-
-### Scraping Multiplo
-1. Clicca "Modalità Multipla"
-2. Inserisci gli URL (uno per riga)
-3. Configura le opzioni avanzate
-4. Avvia l'elaborazione batch
-
-### Confronto Prodotti Avanzato
-1. **Modalità "Tutti i Prodotti"**: Confronta automaticamente tutti i prodotti di tutti i siti
-2. **Modalità "Domini Specifici"**: Seleziona 2+ siti da confrontare per analisi mirata
-3. **Risultati Intelligenti**: Trova prodotti simili con prezzi diversi tra siti diversi
-4. **Filtri Dinamici**: Selezione multipla di domini con conteggio prodotti in tempo reale
-
-## 🔗 LLM Scraper Integration
-
-**Nuova integrazione** con [LLM Scraper](https://github.com/mishushakov/llm-scraper) per funzionalità avanzate di scraping!
-
-### 🚀 Caratteristiche LLM Scraper:
-- **Schema-based Extraction** - Estrazione basata su schemi Zod/JSON
-- **Multiple LLM Support** - OpenAI, Anthropic, Google AI
-- **Streaming Support** - Streaming di dati in tempo reale
-- **Code Generation** - Generazione automatica di script Playwright
-- **Multi-modal Support** - Supporto per immagini e screenshot
-
-### 📦 Installazione Automatica:
-```bash
+playwright install chromium
 cd Backend
-python install_llm_scraper.py
+uvicorn main:app --host 127.0.0.1 --port 8010
 ```
 
-### 📦 Installazione Manuale:
+Apri `http://127.0.0.1:8010/`. Docs API su `/docs`, health su `/health`.
+
+Su Windows serve la console in UTF-8: `main.py` riconfigura già `stdout`/`stderr`.
+
+### Ri-build del frontend (opzionale)
+
+Necessario solo se modifichi le classi Tailwind o i pacchetti vendored:
+
 ```bash
-cd Backend
+cd Frontend
 npm install
-npx playwright install chromium
-python test_llm_scraper.py
+npm run build        # scarica i vendor + builda css/tailwind.build.css
+# oppure singolarmente: npm run vendor | npm run build:css
 ```
 
-### 🔧 Utilizzo Rapido:
-```python
-from llm_scraper_bridge import scrape_with_llm_scraper
+## Deploy
 
-result = await scrape_with_llm_scraper(
-    url="https://example.com",
-    schema={"type": "object", "properties": {"products": {"type": "array"}}},
-    format_type="html"
-)
-```
+Deploy ufficiale su **Render** (Docker) tramite `render.yaml` + `Dockerfile`
+(base `mcr.microsoft.com/playwright/python`, che fornisce il Chromium riusato anche
+da Crawl4AI). Variabili d'ambiente su Render: `OPENAI_API_KEY`, `GEMINI_API_KEY`
+(opz. `JINA_API_KEY`). Un keep-alive via GitHub Actions
+(`.github/workflows/keep-alive.yml`) mitiga il cold start del free tier.
 
-📖 **Documentazione completa**: `Backend/LLM_SCRAPER_README.md`
+Procedura completa, limiti del free tier e troubleshooting: vedi **`DEPLOY.md`**.
 
-## 🏗️ Struttura del Progetto
+## API in breve
 
-```
-jusper/
-├── Backend/
-│   ├── mr_anto_scraper.py      # API principale FastAPI
-│   ├── html_analyzer.py        # Analizzatore HTML/AI asincrono
-│   ├── ai_content_analyzer.py  # Analizzatore contenuto AI
-│   ├── ai_product_comparator.py # Confronto intelligente prodotti con AI
-│   ├── historical_products_db.py # Database prodotti storici
-│   ├── llm_scraper_bridge.py   # Bridge per LLM Scraper
-│   ├── test_llm_scraper.py     # Test LLM Scraper
-│   ├── package.json            # Dipendenze Node.js
-│   ├── selector_database.py    # Gestione selettori CSS
-│   ├── unified_scraper.py      # Scraper unificato
-│   ├── progressive_scraper.py  # Scraper progressivo
-│   ├── price_monitor.py        # Monitoraggio prezzi
-│   ├── price_extractor.py      # Estrazione prezzi
-│   ├── google_price_finder.py  # Ricerca prezzi Google
-│   ├── google_vision_finder.py # Ricerca con Google Vision
-│   ├── playwright_selector_finder.py # Trova selettori con Playwright
-│   ├── scraping_logic.py       # Logica di scraping
-│   ├── utils.py                # Utilità generali
-│   ├── cache_manager.py        # Gestione cache
-│   ├── price_scheduler.py      # Scheduler prezzi
-│   ├── env.local               # Configurazione ambiente
-│   └── database/               # Database SQLite
-├── Frontend/
-│   ├── index.html             # UI Vue.js con sistema confronto avanzato
-│   ├── css/styles.css         # Stili CSS personalizzati
-│   └── js/                    # Moduli JavaScript modulari
-├── data/
-│   ├── cache/                 # Cache dati
-│   ├── database/              # Database selettori
-│   └── api_extracts/          # Estrazioni API salvate
-├── docs/                      # Documentazione
-├── start.py                   # Script di avvio
-├── requirements.txt           # Dipendenze Python
-├── Procfile                  # Configurazione deploy
-└── railway.json             # Configurazione Railway
-```
+Circa 47 endpoint, esposti da `Backend/main.py` (infra/static) e dai router in
+`Backend/routers/`. Alcuni esempi:
 
-## 🐛 Risoluzione Problemi
+- `POST /fast-extract`, `POST /fast-extract-multiple` — estrazione
+- `POST /compare-products`, `POST /compare-prices` — confronto
+- `POST /google-search`, `GET /google-search-results` — ricerca venditori
+- `GET /monitoring/products`, `POST /monitoring/check-prices`, `GET /monitoring/alerts`
+- `GET /historical-products`, `GET /historical-products/export?format=csv|json`
+- `POST /chat`, `GET /chat/models`
+- `GET /health`
 
-### Errore "Browser has been closed"
-- Assicurati che Playwright sia installato: `playwright install`
-- Riavvia il server dopo cambi di configurazione
+Elenco completo in `PROJECT_STRUCTURE.md` e su `/docs`.
 
-### Problemi con API Keys
-- Verifica che le chiavi siano corrette in `Backend/env.local`
-- Controlla i limiti di quota delle API
+## Struttura
 
-### Port già in uso
-- Cambia porta in `start.py` o usa: `python start.py --port 8001`
-
-## 🤝 Contribuire
-
-1. Fork del repository
-2. Crea un branch feature (`git checkout -b feature/nuova-feature`)
-3. Commit delle modifiche (`git commit -am 'Aggiungi nuova feature'`)
-4. Push del branch (`git push origin feature/nuova-feature`)
-5. Crea una Pull Request
-
-## 📝 Licenza
-
-Questo progetto è distribuito sotto licenza MIT. Vedi `LICENSE` per maggiori dettagli.
-
-## 🙏 Crediti
-
-Sviluppato con ❤️ per la community del web scraping.
-
----
-
-**⭐ Se ti piace il progetto, lascia una stella su GitHub!** 
+Panoramica dettagliata di cartelle, pipeline e routing in **`PROJECT_STRUCTURE.md`**.
