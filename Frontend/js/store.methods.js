@@ -43,6 +43,10 @@ Object.assign(Store.prototype, {
                     const sumToday = (this.state.recentActivities || []).reduce((sum, act) => {
                         try {
                             const d = new Date(act.rawTimestamp || act.timestamp);
+                            if (isNaN(d.getTime())) {
+                                // Timestamp mancante o non valido: salta questa attività
+                                return sum;
+                            }
                             const actDate = d.toISOString().split('T')[0];
                             console.log(`🔍 DEBUG: Attività ${act.id}, timestamp: ${act.rawTimestamp || act.timestamp}, data: ${actDate}, prodotti: ${act.productsFound}`);
                             return actDate === today ? sum + (act.productsFound || 0) : sum;

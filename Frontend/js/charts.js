@@ -356,7 +356,11 @@ class ChartManager {
     
     // Genera dati grafico categorie (sostituisce performance)
     generateCategoriesChartData(categoriesData) {
-        if (!categoriesData || categoriesData.length === 0) {
+        // Accetta sia array che oggetto {categorie: [...]} o simili; normalizza ad array
+        if (categoriesData && !Array.isArray(categoriesData)) {
+            categoriesData = categoriesData.categories || categoriesData.data || categoriesData.stats || [];
+        }
+        if (!Array.isArray(categoriesData) || categoriesData.length === 0) {
             return this.getSampleCategoriesData();
         }
         
