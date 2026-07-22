@@ -123,6 +123,9 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
                 # brand dominante e scarta chi non combacia. Generalista: usa
                 # solo uguaglianza di brand, nessun elenco hardcoded.
                 clusters = self._enforce_brand_consistency(clusters)
+                # Secondo guard: stesso brand ma modello diverso non deve unirsi
+                # (es. MacBook Neo vs MacBook Air). Sotto-raggruppa per nome.
+                clusters = self._enforce_model_consistency(clusters)
 
                 logger.info(f"✅ DEBUG - Cluster finali creati: {len(clusters)}")
                 return clusters
@@ -232,6 +235,69 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
                 logger.info(f"⚠️ Cluster scartato dopo brand guard: resta {len(kept)} prodotto")
         return cleaned
 
+    # Attributi generici da ignorare quando si confronta il MODELLO (colore,
+    # taglio memoria, unita'). Sono attributi di prodotto, non un elenco di
+    # domini/brand: il sistema resta generalista.
+    _MODEL_STOPWORDS = {
+        "gb", "tb", "ram", "ssd", "hdd", "cm", "mm", "pollici", "kg", "g",
+        "notebook", "laptop", "computer", "portatile", "portatili", "pc",
+        "con", "di", "e", "il", "la", "the", "and",
+        "nero", "bianco", "grigio", "argento", "silver", "oro", "gold", "blu",
+        "blue", "azzurro", "rosa", "pink", "giallo", "yellow", "verde", "green",
+        "rosso", "red", "viola", "purple", "titanio", "titanium", "grafite",
+        "space", "gray", "grey", "pastello", "agrume", "mezzanotte", "midnight",
+        "galassia", "starlight", "sabbia",
+    }
+
+    def _model_signature(self, product: Dict[str, Any]) -> str:
+        """Firma-modello: nome senza brand, colori, tagli memoria e unita'.
+        Serve a confrontare il modello ignorando le varianti estetiche."""
+        import re
+        name = (product.get('normalized_name') or product.get('original_name') or '').lower()
+        brand = self._brand_key(product)
+        tokens = re.split(r'[^a-z0-9]+', name)
+        sig = []
+        for t in tokens:
+            if not t or t == brand:
+                continue
+            if t in self._MODEL_STOPWORDS:
+                continue
+            if t.isdigit() and len(t) >= 3:  # es. 512, 1000 (memoria) -> scarta
+                continue
+            sig.append(t)
+        return " ".join(sig)
+
+    def _enforce_model_consistency(self, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Dentro ogni cluster (gia' mono-brand) separa i modelli diversi.
+
+        Raggruppa i prodotti per similarita' della firma-modello: varianti di
+        colore/memoria dello stesso modello restano insieme, modelli diversi
+        dello stesso brand finiscono in cluster distinti. Sotto-gruppi con meno
+        di 2 prodotti vengono scartati.
+        """
+        threshold = 0.72
+        result = []
+        for cluster in clusters:
+            products = cluster.get('products', [])
+            subgroups = []  # lista di {sig, products}
+            for p in products:
+                sig = self._model_signature(p)
+                placed = False
+                for sg in subgroups:
+                    if SequenceMatcher(None, sig, sg['sig']).ratio() >= threshold:
+                        sg['products'].append(p)
+                        placed = True
+                        break
+                if not placed:
+                    subgroups.append({'sig': sig, 'products': [p]})
+            if len(subgroups) > 1:
+                logger.info(f"🛡️ Model guard: cluster diviso in {len(subgroups)} modelli distinti")
+            for i, sg in enumerate(subgroups):
+                if len(sg['products']) > 1:
+                    result.append({**cluster, 'products': sg['products'],
+                                   'group_id': cluster.get('group_id', 0) * 100 + i})
+        return result
+
     async def _analyze_products_in_groups(self, products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Analisi AI per gruppi quando ci sono troppi prodotti"""
         try:
@@ -258,6 +324,7 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
             # Il merge usa similarità di nome e può re-unire brand diversi:
             # riapplica il guard sul brand.
             merged_clusters = self._enforce_brand_consistency(merged_clusters)
+            merged_clusters = self._enforce_model_consistency(merged_clusters)
 
             return merged_clusters
 

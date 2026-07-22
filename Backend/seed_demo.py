@@ -504,6 +504,54 @@ SEED_PRODUCTS = [
         "availability": "Spedizione disponibile",
         "source": "unieuro.it",
         "url": "https://www.unieuro.it/online/Computer-e-Tablet/Computer-Portatili/Notebook"
+    },
+    {
+        "name": "APPLE MacBook Air 13 M3 8-core CPU 10-core GPU 16GB 256GB Grigio siderale",
+        "price": "€ 1149,00",
+        "brand": "APPLE",
+        "model": "MacBook Air 13 M3",
+        "category": "Notebook",
+        "specs": "Chip M3, 8-core CPU, 10-core GPU, RAM 16GB, SSD 256GB",
+        "rating": "",
+        "availability": "Disponibile",
+        "source": "unieuro.it",
+        "url": "https://www.unieuro.it/online/Computer-e-Tablet/Computer-Portatili/Notebook"
+    },
+    {
+        "name": "APPLE MacBook Air 13 M3 8-core CPU 10-core GPU 16GB 256GB Grigio siderale",
+        "price": "€ 1199,00",
+        "brand": "APPLE",
+        "model": "MacBook Air 13 M3",
+        "category": "Notebook",
+        "specs": "Chip M3, 8-core CPU, 10-core GPU, RAM 16GB, SSD 256GB",
+        "rating": "",
+        "availability": "Disponibile",
+        "source": "mediaworld.it",
+        "url": "https://www.mediaworld.it/it/category/notebook-200101.html"
+    },
+    {
+        "name": "ACER Aspire 3 A315-24P AMD Ryzen 5 7520U RAM 16GB SSD 512GB 15.6 Full HD Argento",
+        "price": "€ 449,00",
+        "brand": "ACER",
+        "model": "Aspire 3 A315-24P",
+        "category": "Notebook",
+        "specs": "AMD Ryzen 5 7520U, RAM 16GB, SSD 512GB, 15.6\" Full HD",
+        "rating": "",
+        "availability": "SOLO ONLINE",
+        "source": "unieuro.it",
+        "url": "https://www.unieuro.it/online/Computer-e-Tablet/Computer-Portatili/Notebook"
+    },
+    {
+        "name": "ACER Aspire 3 A315-24P AMD Ryzen 5 7520U RAM 16GB SSD 512GB 15.6 Full HD Argento",
+        "price": "€ 429,00",
+        "brand": "ACER",
+        "model": "Aspire 3 A315-24P",
+        "category": "Notebook",
+        "specs": "AMD Ryzen 5 7520U, RAM 16GB, SSD 512GB, 15.6\" Full HD",
+        "rating": "",
+        "availability": "Disponibile",
+        "source": "mediaworld.it",
+        "url": "https://www.mediaworld.it/it/category/notebook-200101.html"
     }
 ]
 
