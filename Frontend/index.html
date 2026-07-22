@@ -126,8 +126,8 @@
                     <div class="stats-grid mb-8">
                         <div class="metric-card">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Prodotti Analizzati</h3>
-                                <i class="fas fa-chart-line text-green-400"></i>
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Prodotti nel DB</h3>
+                                <i class="fas fa-box text-green-400"></i>
                             </div>
                             <div class="text-2xl font-bold mb-2">{{ stats.totalProducts || 0 }}</div>
                             <div class="flex items-center text-sm">
@@ -142,49 +142,49 @@
 
                         <div class="metric-card">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Precisione AI</h3>
-                                <i class="fas fa-brain text-blue-400"></i>
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Estrazioni oggi</h3>
+                                <i class="fas fa-bolt text-blue-400"></i>
                                 </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.aiAccuracy || 0 }}%</div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.extractionsToday || 0 }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-blue-400">{{ stats.aiModel || 'GPT-4' }}</span>
-                                <span class="text-gray-400 ml-1">model</span>
+                                <span class="text-blue-400">{{ stats.newProductsToday || 0 }}</span>
+                                <span class="text-gray-400 ml-1">prodotti nuovi</span>
                                     </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" 
-                                     :style="{ width: (stats.aiAccuracy || 0) + '%' }"></div>
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
+                                     :style="{ width: Math.min((stats.extractionsToday || 0) * 12, 100) + '%' }"></div>
                                 </div>
                             </div>
 
                         <div class="metric-card">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Siti Monitorati</h3>
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Siti coperti</h3>
                                 <i class="fas fa-globe text-purple-400"></i>
                         </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.sitesMonitored || 0 }}</div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.totalSites || 0 }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-purple-400">{{ stats.activeSites || 0 }}</span>
-                                <span class="text-gray-400 ml-1">attivi</span>
+                                <span class="text-purple-400">venditori</span>
+                                <span class="text-gray-400 ml-1">con prodotti</span>
                     </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
-                                     :style="{ width: (stats.activeSites / stats.sitesMonitored * 100) + '%' }"></div>
+                                <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
+                                     :style="{ width: Math.min((stats.totalSites || 0) * 8, 100) + '%' }"></div>
                 </div>
             </div>
 
                         <div class="metric-card">
                             <div class="flex items-center justify-between mb-3">
-                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Performance</h3>
-                                <i class="fas fa-tachometer-alt text-orange-400"></i>
+                                <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">In monitoraggio</h3>
+                                <i class="fas fa-clock text-orange-400"></i>
                                 </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.avgResponseTime || 0 }}ms</div>
+                            <div class="text-2xl font-bold mb-2">{{ stats.sitesMonitored || 0 }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-orange-400">{{ stats.uptime || 0 }}%</span>
-                                <span class="text-gray-400 ml-1">uptime</span>
+                                <span class="text-orange-400">{{ stats.activeSites || 0 }}</span>
+                                <span class="text-gray-400 ml-1">alert attivi</span>
                             </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
-                                <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full" 
-                                     :style="{ width: (100 - stats.avgResponseTime / 10) + '%' }"></div>
+                                <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
+                                     :style="{ width: Math.min((stats.sitesMonitored || 0) * 10, 100) + '%' }"></div>
                     </div>
                 </div>
 
@@ -192,7 +192,7 @@
                         </div>
                         
                     <!-- Badge dati dimostrativi (finché non ci sono dati reali) -->
-                    <div v-if="!store.state.stats || !store.state.stats.total_products" class="mb-4">
+                    <div v-if="!store.state.stats || !store.state.stats.totalProducts" class="mb-4">
                         <span class="inline-flex items-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
                             <i class="fas fa-flask"></i> Dati dimostrativi — esegui una scansione per vedere i dati reali
                         </span>
