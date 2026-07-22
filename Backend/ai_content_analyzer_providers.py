@@ -15,6 +15,36 @@ from typing import Dict, Any, Optional
 class _ProvidersMixin:
     """Provider AI: ordine di tentativo, fallback, chiamate OpenAI/Gemini."""
 
+    async def call_json(self, prompt: str, max_tokens: int = 2048):
+        """Chiamata AI generica che ritorna JSON parsato (qualsiasi forma).
+
+        Usata per compiti diversi dall'estrazione prodotti (es. giudizio di
+        rilevanza). Gemini JSON mode, thinking off. None se non configurato/fallisce.
+        """
+        if not self.gemini_api_key:
+            return None
+        try:
+            import asyncio
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.0,
+                    "responseMimeType": "application/json",
+                    "maxOutputTokens": max_tokens,
+                    "thinkingConfig": {"thinkingBudget": 0},
+                },
+            }
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.gemini_model}:generateContent?key={self.gemini_api_key}"
+            resp = await asyncio.to_thread(requests.post, url, json=payload, timeout=60)
+            if resp.status_code != 200:
+                print(f"call_json: HTTP {resp.status_code}")
+                return None
+            text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+            return self._extract_json_from_response(text)
+        except Exception as e:
+            print(f"call_json errore: {e}")
+            return None
+
     def _provider_order(self) -> list:
         """Ordine di tentativo dei provider in base a AI_PROVIDER.
 

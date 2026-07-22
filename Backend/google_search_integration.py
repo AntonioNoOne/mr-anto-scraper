@@ -227,6 +227,11 @@ class GoogleSearchIntegration(_DuckDuckGoMixin, _BingMixin, _ParsingMixin, _Vali
             logger.info(f"✅ Risultati validati: {len(validated_results)}")
             logger.info(f"🔍 DEBUG: === FINE VALIDAZIONE ===")
 
+            # FASE 2.4: giudice di rilevanza AI generalista (brand-pesato) — scarta
+            # notizie/blog/viaggi/prodotti diversi senza hardcode di città/testate.
+            validated_results = await self._ai_filter_relevant(product_data, validated_results)
+            logger.info(f"🎯 Dopo filtro rilevanza AI: {len(validated_results)}")
+
             # FASE 2.5: arricchimento prezzi dalle pagine venditore (i prezzi non
             # sono negli snippet di ricerca). Fetch dei top risultati con Crawl4AI.
             validated_results = await self._enrich_prices_from_pages(validated_results, max_pages=10)

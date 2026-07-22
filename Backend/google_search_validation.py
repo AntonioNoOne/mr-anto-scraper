@@ -111,28 +111,15 @@ class _ValidationMixin:
         "kaufland", "allegro.pl", "emag.", "bol.com", "fnac.com", "fnac.es",
         "mediamarkt", "idealo.de", "idealo.co", "amazon.de", "amazon.es",
         "amazon.fr", "amazon.co.uk", "ebay.com", "newegg", "rakuten",
-        # testate giornalistiche / blog / magazine (non vendono, parlano)
-        "corriere.it", "repubblica.it", "gazzetta.it", "ilsole24ore", "ansa.it",
-        "wired.it", "wired.com", "ilfattoquotidiano", "fanpage.it", "today.it",
-        "ilmessaggero", "lastampa.it", "ilgiornale", "dday.it", "hwupgrade",
-        "tomshw", "quotidiano", "ilrestodelcarlino", "tgcom24", "blogspot",
-        "wordpress.com", "substack", "bicitv", "mtb-mag", "bicilive", "cyclinginquiry",
-        # news locali / turismo / viaggi / noleggio / moda (non vendita prodotto)
-        "quicomo", "primocanale", "varesenews", "ilgiorno", "espansionetv",
-        "lifeintravel", "donnamoderna", "turismoroma", "turismo", "viaggi",
-        "bikerental", "noleggio", "rental", "luisaviaroma", "tripadvisor",
+        # piattaforme di blog/forum universali (non specifiche di città/testate)
+        "blogspot", "wordpress.com", "substack", "tripadvisor",
     )
 
-    # Parole che indicano un ARTICOLO/cronaca/guida/viaggio (non una vendita)
+    # Marcatori GENERICI di contenuto editoriale (non città/testate specifiche):
+    # usati solo come pre-filtro leggero; la rilevanza vera la decide l'AI.
     _ARTICLE_HINTS = (
-        "recensione", "recensioni", "review", "prova su strada", "opinioni",
+        "recensione", "recensioni", "review", "opinioni",
         "guida all'acquisto", "come scegliere", "migliori", "classifica",
-        "notizia", "articolo", "intervista", "vs ", "differenze", "vale la pena",
-        # cronaca / incidenti
-        "incidente", "investit", "cronaca", "ferit", "arrestat", "rubat",
-        # viaggi / turismo / itinerari (non vendono la bici, la usano)
-        "itinerari", "percorso", "percorsi", "viaggio in bici", "pedalando",
-        "francigena", "scoprire", "chilometri", " km ", "tappa", "noleggi",
     )
     # Segnali che indicano una pagina di VENDITA
     _SHOP_HINTS = (
@@ -145,6 +132,58 @@ class _ValidationMixin:
         """True se il dominio non è un venditore pertinente (social/forum/estero/news)."""
         u = (url or "").lower()
         return any(j in u for j in self._JUNK_DOMAINS)
+
+    async def _ai_filter_relevant(self, product_data: Dict[str, Any],
+                                  results: List[Dict[str, Any]],
+                                  max_items: int = 30) -> List[Dict[str, Any]]:
+        """Giudice di rilevanza GENERALISTA via AI (niente hardcode città/testate).
+
+        Dato il prodotto cercato (nome + brand/campi opzionali), l'AI tiene solo i
+        risultati che vendono davvero quel prodotto, scartando notizie/blog/viaggi/
+        prodotti diversi. I valori opzionali (soprattutto il BRAND) pesano molto.
+        Se l'AI non è disponibile, non filtra (ritorna i risultati invariati).
+        """
+        if not results:
+            return results
+        try:
+            from ai_content_analyzer import ai_content_analyzer
+        except Exception:
+            return results
+
+        name = (product_data.get("name") or "").strip()
+        # Campi opzionali che, se presenti, DEVONO pesare nella scelta
+        optional = {k: product_data.get(k) for k in ("brand", "model", "category", "price")
+                    if product_data.get(k)}
+        items = results[:max_items]
+        lines = [f"{i}) {(r.get('name','') or '')[:140]} :: {(r.get('description','') or '')[:120]}"
+                 for i, r in enumerate(items)]
+
+        opt_txt = "; ".join(f"{k}={v}" for k, v in optional.items()) or "nessuno"
+        prompt = (
+            f'Prodotto cercato: "{name}".\n'
+            f'Attributi opzionali (PESANO molto nella scelta): {opt_txt}.\n\n'
+            'Tieni SOLO i risultati che vendono/offrono proprio questo prodotto o una '
+            'sua variante coerente con gli attributi.\n'
+            'REGOLE:\n'
+            '- Se è indicato un BRAND, il risultato deve riguardare QUEL brand: scarta '
+            'altri brand o pagine generiche che non lo citano.\n'
+            '- Scarta notizie/cronaca, articoli, blog, guide/recensioni, viaggi/turismo, '
+            'noleggio, o prodotti chiaramente diversi.\n'
+            '- Nel dubbio ma coerente col prodotto/brand, TIENI.\n'
+            'Rispondi SOLO JSON: {"keep":[indici interi da tenere]}.\n\n'
+            'Risultati:\n' + "\n".join(lines)
+        )
+
+        res = await ai_content_analyzer.call_json(prompt)
+        if not isinstance(res, dict) or "keep" not in res:
+            return results  # AI non disponibile/parse fallito: nessun filtro
+        try:
+            keep = {int(x) for x in res.get("keep", [])}
+        except Exception:
+            return results
+        kept = [r for i, r in enumerate(items) if i in keep] + results[max_items:]
+        logger.info(f"🎯 AI rilevanza: tenuti {len(kept)}/{len(results)} (brand-pesato)")
+        return kept if kept else results
 
     def _looks_like_article(self, result: Dict[str, Any]) -> bool:
         """True se il risultato sembra un articolo/recensione e NON una vendita.
