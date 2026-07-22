@@ -1,5 +1,28 @@
 # CLAUDE.md — mr-anto-scraper (Jusper)
 
+## Regole di lavoro (contratto) — LEGGERE SEMPRE
+
+Il contratto completo è in `AGENTS.md` + `docs/AI_ASSISTANT_WORKSPACE.md`.
+Claude Code carica in automatico solo questo file, quindi i punti chiave sono
+ripetuti qui e vanno seguiti sempre:
+
+- **Spike prima di implementare** qualsiasi cosa non banale o incerta (nuova
+  integrazione, API sconosciuta, comportamento che può fallire in più modi):
+  prova throwaway (scratchpad/script temp) che dimostra l'approccio sulla
+  realtà PRIMA di toccare il codice del progetto. Mai implementare per
+  assunzione o sul happy path.
+- **Test prima di dire "fatto"**: scrivi/adegua i test del comportamento
+  toccato, eseguili, riporta l'output vero. Non è "fatto" finché i test non
+  passano (o spieghi perché non se ne applica nessuno).
+- **File length guard NON gira senza commit.** Gli hook Git (`.githooks`)
+  scattano solo su commit/push. Dopo modifiche sostanziali lancia tu
+  `python scripts/check_file_length.py`. Limiti: warn 800 righe, block 1000
+  (`config/guard.json`). Sopra soglia: estrai in moduli, non gonfiare il file.
+- **Prima di proporre un'architettura**, leggi `docs/memory/02_failed_graveyard.md`:
+  se l'approccio è lì, non riproporlo.
+- Chiusura lavoro significativo: `python scripts/agent_finish.py` (o
+  `write_checkpoint.py`) + `git status --short`.
+
 ## Serena MCP — USARE SEMPRE
 
 Serena è configurato a livello **globale** (scope user, `~/.claude.json` →

@@ -21,6 +21,24 @@ size limit.
 
 Thresholds and exclusions live in `config/guard.json`.
 
+The Git hooks only run on commit/push. Do NOT rely on them as your only guard:
+run `python scripts/check_file_length.py` (or `apg check --only file-length
+--report-only`) yourself after substantial edits, because work that is not
+committed never triggers the hooks and oversized files stay invisible.
+
+## Spikes And Tests
+
+- For any non-trivial or uncertain change (new integration, unfamiliar API,
+  behavior that can fail in several ways), do a small **spike first**: a
+  throwaway probe (in the scratchpad or a temp script) that proves the approach
+  works against reality BEFORE editing project code. Do not implement on
+  assumption or the happy path.
+- Write or adjust **tests for the touched behavior before declaring the work
+  done**, run them, and report the real output. A change is not "done" until its
+  tests pass — or you state explicitly why no test applies.
+- Prefer verifying against reality (real call, real data, real run) over
+  believing it should work.
+
 ## Checkpoint And Journal
 
 Keep project continuity in three files:
