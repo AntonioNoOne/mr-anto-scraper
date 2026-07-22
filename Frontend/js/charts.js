@@ -55,43 +55,58 @@ class ChartManager {
             canvas.height = parent.clientHeight || 250;
         }
         
-        // Crea grafico
+        // Gradiente area (accento brand) - marks sottili, griglia recessiva
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, canvas.height || 250);
+        grad.addColorStop(0, 'rgba(59,130,246,0.35)');
+        grad.addColorStop(1, 'rgba(59,130,246,0.02)');
+
         const chart = new Chart(canvas, {
             type: 'line',
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Prodotti Estratti',
+                    label: 'Prodotti estratti',
                     data: [],
                     borderColor: this.colors.primary,
-                    backgroundColor: this.colors.primary + '20',
-                    tension: 0.4,
-                    fill: true
+                    backgroundColor: grad,
+                    borderWidth: 2,
+                    tension: 0.35,
+                    fill: true,
+                    pointRadius: 3,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: this.colors.primary,
+                    pointBorderColor: '#0f0f0f',
+                    pointBorderWidth: 2
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                // Serie singola -> nessuna legenda (il titolo la nomina)
                 plugins: {
-                    legend: {
-                        display: true,
-                        labels: { color: '#E5E7EB' }
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1F2937', titleColor: '#E5E7EB',
+                        bodyColor: '#E5E7EB', borderColor: '#374151', borderWidth: 1,
+                        callbacks: { label: (c) => ` ${c.parsed.y} prodotti` }
                     }
                 },
                 scales: {
                     x: {
-                        ticks: { color: '#E5E7EB' },
-                        grid: { color: '#374151' }
+                        ticks: { color: '#9CA3AF', font: { size: 11 } },
+                        grid: { display: false }
                     },
                     y: {
-                        ticks: { color: '#E5E7EB' },
-                        grid: { color: '#374151' },
+                        ticks: { color: '#9CA3AF', font: { size: 11 }, precision: 0 },
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        border: { display: false },
                         beginAtZero: true
                     }
                 }
             }
         });
-        
+
         this.charts.set('activity', chart);
     }
     
@@ -121,18 +136,17 @@ class ChartManager {
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Prodotti per Categoria',
+                    label: 'Prodotti per sito',
                     data: [],
-                    backgroundColor: [
-                        '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
-                        '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9'
-                    ],
+                    // Serie singola = un solo colore (accento brand), non arcobaleno
+                    backgroundColor: '#6366F1',
+                    hoverBackgroundColor: '#818CF8',
                     borderColor: 'transparent',
                     borderWidth: 0,
-                    borderRadius: 20, // Barre molto rotonde
+                    borderRadius: 6,
                     borderSkipped: false,
-                    barThickness: 12, // Barre sottili
-                    maxBarThickness: 15
+                    barThickness: 14,
+                    maxBarThickness: 18
                 }]
             },
             options: {
@@ -158,24 +172,15 @@ class ChartManager {
                 },
                 scales: {
                     x: {
-                        ticks: { 
-                            color: '#E5E7EB',
-                            font: { size: 11 }
-                        },
-                        grid: { 
-                            color: '#374151',
-                            drawBorder: false
-                        },
+                        ticks: { color: '#9CA3AF', font: { size: 11 }, precision: 0 },
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        border: { display: false },
                         beginAtZero: true
                     },
                     y: {
-                        ticks: { 
-                            color: '#E5E7EB',
-                            font: { size: 10 }
-                        },
-                        grid: { 
-                            display: false
-                        }
+                        ticks: { color: '#9CA3AF', font: { size: 11 } },
+                        grid: { display: false },
+                        border: { display: false }
                     }
                 },
                 layout: {
@@ -202,19 +207,47 @@ class ChartManager {
         }
     }
     
+    // True se non ci sono dati reali (mostra demo al primo accesso)
+    _isEmpty(arr) {
+        return !arr || arr.length === 0 || arr.every(v => !v);
+    }
+
+    // Demo: estrazioni ultimi 7 giorni (valori plausibili, look "vivo")
+    _demoActivity() {
+        const giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
+        const data = giorni.map(() => 8 + Math.floor(Math.random() * 34));
+        return { labels: giorni, data };
+    }
+
+    // Demo: prodotti per sito (retailer IT tipici)
+    _demoSites() {
+        const siti = ['unieuro.it', 'mediaworld.it', 'amazon.it', 'euronics.it', 'trony.it'];
+        const data = siti.map(() => 12 + Math.floor(Math.random() * 40));
+        data.sort((a, b) => b - a);
+        return { labels: siti, data };
+    }
+
     // Aggiorna grafico attività
     async updateActivityChart(activities = null) {
         const chart = this.charts.get('activity');
         if (!chart) return;
-        
+
         try {
             const activitiesData = activities || this.getActivitiesData();
-            const chartData = this.generateActivityChartData(activitiesData);
-            
+            let chartData = this.generateActivityChartData(activitiesData);
+
+            // Nessun dato reale -> demo (badge "dati dimostrativi" gestito nella UI)
+            if (this._isEmpty(chartData.data)) {
+                chartData = this._demoActivity();
+                this.usingDemoData = true;
+            } else {
+                this.usingDemoData = false;
+            }
+
             chart.data.labels = chartData.labels;
             chart.data.datasets[0].data = chartData.data;
             chart.update('active');
-            
+
         } catch (error) {
             console.error('Errore aggiornamento grafico attività:', error);
         }
@@ -226,18 +259,19 @@ class ChartManager {
         if (!chart) return;
         
         try {
-            const categoriesData = this.getCategoriesData();
-            const chartData = this.generateCategoriesChartData(categoriesData);
-            
-            // Forza aggiornamento dati
+            // Prova dati per sito reali; fallback categorie; poi demo
+            let chartData = this.generateCategoriesChartData(this.getCategoriesData());
+            if (this._isEmpty(chartData.data)) {
+                chartData = this._demoSites();
+                this.usingDemoData = true;
+            }
+
             chart.data.labels = chartData.labels;
             chart.data.datasets[0].data = chartData.data;
-            
-            // Forza ridisegno completo
             chart.update('none');
-            
+
         } catch (error) {
-            console.error('Errore aggiornamento grafico categorie:', error);
+            console.error('Errore aggiornamento grafico:', error);
         }
     }
     

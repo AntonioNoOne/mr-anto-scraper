@@ -191,19 +191,28 @@
 
                         </div>
                         
+                    <!-- Badge dati dimostrativi (finché non ci sono dati reali) -->
+                    <div v-if="!store.state.stats || !store.state.stats.total_products" class="mb-4">
+                        <span class="inline-flex items-center gap-2 text-xs text-amber-300/90 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+                            <i class="fas fa-flask"></i> Dati dimostrativi — esegui una scansione per vedere i dati reali
+                        </span>
+                    </div>
+
                     <!-- Charts Row -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        <!-- Activity Chart -->
+                        <!-- Estrazioni ultimi 7 giorni -->
                         <div class="chart-container">
-                            <h3 class="text-lg font-semibold mb-4">Attività Recente</h3>
+                            <h3 class="text-lg font-semibold mb-1">Estrazioni ultimi 7 giorni</h3>
+                            <p class="text-xs text-gray-500 mb-4">Prodotti estratti per giorno</p>
                             <div class="chart-wrapper" style="height: 250px; width: 100%; position: relative;">
                                 <canvas id="activityChart"></canvas>
                             </div>
                         </div>
 
-                        <!-- Performance per Sito Chart -->
+                        <!-- Prodotti per sito -->
                         <div class="chart-container">
-                            <h3 class="text-lg font-semibold mb-4">Performance per Sito (Ultimi 7 giorni)</h3>
+                            <h3 class="text-lg font-semibold mb-1">Prodotti per sito</h3>
+                            <p class="text-xs text-gray-500 mb-4">Copertura per venditore</p>
                             <div class="chart-wrapper" style="height: 300px; width: 100%; position: relative;">
                                 <canvas id="priceChart"></canvas>
                             </div>
