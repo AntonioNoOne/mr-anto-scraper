@@ -173,7 +173,7 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
             jina_first = await self._extract_via_jina_reader(url, stop_flag)
             if jina_first and jina_first.get("products"):
                 print(f"✅ Jina Reader (primario cloud): {jina_first['total_found']} prodotti")
-                return jina_first
+                return self._finalize(jina_first)
             print("↩️ Jina senza prodotti, provo Crawl4AI/browser")
 
         # STRATEGIA browser: Crawl4AI (stealth, passa anti-bot) -> markdown -> AI
@@ -181,7 +181,7 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
             c4 = await self._extract_via_crawl4ai(url, stop_flag)
             if c4 and c4.get("products"):
                 print(f"✅ Crawl4AI: {c4['total_found']} prodotti")
-                return c4
+                return self._finalize(c4)
             print("↩️ Crawl4AI senza prodotti, provo il browser custom")
 
         # Fallback: stack browser custom (selettori DB, captcha, ecc.)
@@ -193,12 +193,35 @@ class FastAIExtractor(_ExtractionMixin, _SelectorFlowMixin, _ParsingMixin, _AiSe
             jina_result = await self._extract_via_jina_reader(url, stop_flag)
             if jina_result and jina_result.get("products"):
                 print(f"✅ Fallback Jina Reader: {jina_result['total_found']} prodotti")
-                return jina_result
+                return self._finalize(jina_result)
 
         # Etichetta il metodo per il path browser (coerenza con extraction_method)
         if isinstance(result, dict) and result.get("success") and not result.get("extraction_method"):
             result["extraction_method"] = "browser"
 
+        return self._finalize(result)
+
+    @staticmethod
+    def _has_price(product: dict) -> bool:
+        """True se il prodotto ha un prezzo plausibile (non vuoto/placeholder)."""
+        v = str(product.get("price", "") or "").strip().lower()
+        if not v or v in ("n/a", "na", "-", "0", "0,00", "0.00", "€0", "€ 0", "prezzo non disponibile"):
+            return False
+        return any(c.isdigit() for c in v)
+
+    def _finalize(self, result):
+        """Rimuove i prodotti senza prezzo (advertising/cross-sell) SE restano
+        prodotti con prezzo. Se nessuno ha prezzo (parsing prezzo fallito in blocco),
+        li tiene tutti per non svuotare il risultato. Per un comparatore prezzi i
+        prodotti senza prezzo sono rumore."""
+        if isinstance(result, dict) and result.get("success") and result.get("products"):
+            prods = result["products"]
+            priced = [p for p in prods if self._has_price(p)]
+            if priced and len(priced) < len(prods):
+                dropped = len(prods) - len(priced)
+                result["products"] = priced
+                result["total_found"] = len(priced)
+                print(f"🧹 Rimossi {dropped} prodotti senza prezzo (advertising)")
         return result
 
     def _extract_domain(self, url: str) -> str:
