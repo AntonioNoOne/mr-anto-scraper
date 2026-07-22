@@ -129,14 +129,13 @@
                                 <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Prodotti nel DB</h3>
                                 <i class="fas fa-box text-green-400"></i>
                             </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.totalProducts || 0 }}</div>
+                            <div class="text-2xl font-bold mb-2">{{ ds('totalProducts') }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-green-400">+{{ stats.newProductsToday || 0 }}</span>
-                <!-- DEBUG: {{ stats.newProductsToday || 'UNDEFINED' }} -->
+                                <span class="text-green-400">+{{ ds('newProductsToday') }}</span>
                                 <span class="text-gray-400 ml-1">oggi</span>
                             </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
-                                <div class="progress-bar" :style="{ width: Math.min((stats.totalProducts / 1000 * 100), 100) + '%' }"></div>
+                                <div class="progress-bar" :style="{ width: Math.min((ds('totalProducts') / 1000 * 100), 100) + '%' }"></div>
                             </div>
                         </div>
 
@@ -145,14 +144,14 @@
                                 <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Estrazioni oggi</h3>
                                 <i class="fas fa-bolt text-blue-400"></i>
                                 </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.extractionsToday || 0 }}</div>
+                            <div class="text-2xl font-bold mb-2">{{ ds('extractionsToday') }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-blue-400">{{ stats.newProductsToday || 0 }}</span>
+                                <span class="text-blue-400">{{ ds('newProductsToday') }}</span>
                                 <span class="text-gray-400 ml-1">prodotti nuovi</span>
                                     </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
                                 <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full"
-                                     :style="{ width: Math.min((stats.extractionsToday || 0) * 12, 100) + '%' }"></div>
+                                     :style="{ width: Math.min((ds('extractionsToday')) * 12, 100) + '%' }"></div>
                                 </div>
                             </div>
 
@@ -161,14 +160,14 @@
                                 <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">Siti coperti</h3>
                                 <i class="fas fa-globe text-purple-400"></i>
                         </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.totalSites || 0 }}</div>
+                            <div class="text-2xl font-bold mb-2">{{ ds('totalSites') }}</div>
                             <div class="flex items-center text-sm">
                                 <span class="text-purple-400">venditori</span>
                                 <span class="text-gray-400 ml-1">con prodotti</span>
                     </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
                                 <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full"
-                                     :style="{ width: Math.min((stats.totalSites || 0) * 8, 100) + '%' }"></div>
+                                     :style="{ width: Math.min((ds('totalSites')) * 8, 100) + '%' }"></div>
                 </div>
             </div>
 
@@ -177,14 +176,14 @@
                                 <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide">In monitoraggio</h3>
                                 <i class="fas fa-clock text-orange-400"></i>
                                 </div>
-                            <div class="text-2xl font-bold mb-2">{{ stats.sitesMonitored || 0 }}</div>
+                            <div class="text-2xl font-bold mb-2">{{ ds('sitesMonitored') }}</div>
                             <div class="flex items-center text-sm">
-                                <span class="text-orange-400">{{ stats.activeSites || 0 }}</span>
+                                <span class="text-orange-400">{{ ds('activeSites') }}</span>
                                 <span class="text-gray-400 ml-1">alert attivi</span>
                             </div>
                             <div class="mt-3 bg-gray-700 rounded-full h-2">
                                 <div class="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full"
-                                     :style="{ width: Math.min((stats.sitesMonitored || 0) * 10, 100) + '%' }"></div>
+                                     :style="{ width: Math.min((ds('sitesMonitored')) * 10, 100) + '%' }"></div>
                     </div>
                 </div>
 
@@ -1548,7 +1547,19 @@
                 setActiveTab(tab) {
                     this.activeTab = tab;
                 },
-                
+
+                // Valore stat "display": reale se il DB ha prodotti, altrimenti
+                // placeholder fittizio (primo accesso). Coerente col badge demo.
+                ds(key) {
+                    const s = this.store.state.stats || {};
+                    if (s.totalProducts) return s[key] || 0;
+                    const demo = {
+                        totalProducts: 1240, newProductsToday: 24, extractionsToday: 18,
+                        totalSites: 6, sitesMonitored: 9, activeSites: 3
+                    };
+                    return demo[key] != null ? demo[key] : 0;
+                },
+
                 toggleChatSidebar() {
                     store.toggleChatSidebar();
                 },

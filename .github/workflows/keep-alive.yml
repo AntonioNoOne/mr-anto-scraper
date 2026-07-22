@@ -16,6 +16,6 @@ jobs:
       - name: Ping health endpoint
         run: |
           echo "Ping $(date -u)"
-          code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" https://mr-anto-scraper.onrender.com/health)
+          code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" https://jusper.onrender.com/health)
           echo "HTTP $code"
           test "$code" = "200"

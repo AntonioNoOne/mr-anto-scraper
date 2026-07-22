@@ -212,11 +212,46 @@ class ChartManager {
         return !arr || arr.length === 0 || arr.every(v => !v);
     }
 
-    // Demo: estrazioni ultimi 7 giorni (valori plausibili, look "vivo")
+    // Ultimi 7 giorni terminanti OGGI: [{date:'YYYY-MM-DD', label:'Mer'}]
+    _last7Days() {
+        const gg = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
+        const out = [];
+        const today = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const key = d.toISOString().split('T')[0];
+            out.push({ date: key, label: gg[d.getDay()] });
+        }
+        return out;
+    }
+
+    // Demo: estrazioni ultimi 7 giorni (finisce a oggi, valori plausibili)
     _demoActivity() {
-        const giorni = ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'];
-        const data = giorni.map(() => 8 + Math.floor(Math.random() * 34));
-        return { labels: giorni, data };
+        const days = this._last7Days();
+        return {
+            labels: days.map(d => d.label),
+            data: days.map(() => 8 + Math.floor(Math.random() * 34))
+        };
+    }
+
+    // Reale: raggruppa le attività per giorno negli ultimi 7 (0 se nessuna)
+    _realActivityLast7() {
+        const days = this._last7Days();
+        const acts = (window.store && window.store.state && window.store.state.recentActivities) || [];
+        const counts = {};
+        for (const a of acts) {
+            const ts = a.rawTimestamp || a.timestamp;
+            if (!ts) continue;
+            const d = new Date(ts);
+            if (isNaN(d.getTime())) continue;
+            const key = d.toISOString().split('T')[0];
+            counts[key] = (counts[key] || 0) + (a.productsFound || a.products || 0);
+        }
+        return {
+            labels: days.map(d => d.label),
+            data: days.map(d => counts[d.date] || 0)
+        };
     }
 
     // Demo: prodotti per sito (retailer IT tipici)
@@ -233,10 +268,9 @@ class ChartManager {
         if (!chart) return;
 
         try {
-            const activitiesData = activities || this.getActivitiesData();
-            let chartData = this.generateActivityChartData(activitiesData);
-
-            // Nessun dato reale -> demo (badge "dati dimostrativi" gestito nella UI)
+            // Finestra fissa: ultimi 7 giorni fino a OGGI. Dati reali dal DB;
+            // se vuoti -> placeholder demo (stesse etichette, valori plausibili).
+            let chartData = this._realActivityLast7();
             if (this._isEmpty(chartData.data)) {
                 chartData = this._demoActivity();
                 this.usingDemoData = true;
