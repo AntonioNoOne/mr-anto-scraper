@@ -329,6 +329,15 @@ async def startup_event():
     app_state.price_scheduler = PriceScheduler(app_state.price_monitor)
     print("✅ Componenti inizializzati")
 
+    # Seed demo: se il DB e' vuoto (es. Render effimero dopo un restart) inserisce
+    # prodotti dimostrativi cosi' l'app e' sempre mostrabile. Gli scan reali si
+    # aggiungono a questi.
+    try:
+        from seed_demo import seed_if_empty
+        await seed_if_empty(app_state.historical_db)
+    except Exception as e:
+        print(f"⚠️ Seed demo non riuscito: {e}")
+
     # Avvia automaticamente il sistema di schedulazione
     try:
         print("⏰ Avvio automatico sistema di schedulazione...")
