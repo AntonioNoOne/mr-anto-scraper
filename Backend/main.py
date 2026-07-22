@@ -62,6 +62,7 @@ from routers import (
     monitoring,
     scheduler,
     history,
+    url_monitor,
 )
 
 app = FastAPI(
@@ -305,6 +306,7 @@ for _router in (
     monitoring.router,
     scheduler.router,
     history.router,
+    url_monitor.router,
 ):
     app.include_router(_router)
 
@@ -327,6 +329,10 @@ async def startup_event():
     app_state.historical_db = HistoricalProductsDB()
     app_state.price_monitor = PriceMonitor()
     app_state.price_scheduler = PriceScheduler(app_state.price_monitor)
+    from url_monitor import UrlMonitor
+    app_state.url_monitor = UrlMonitor()
+    # Loop scansioni periodiche URL (usa getter per accedere ai singleton correnti)
+    app_state.url_monitor.start_loop(lambda: app_state.extractor, lambda: app_state.historical_db)
     print("✅ Componenti inizializzati")
 
     # Seed demo: se il DB e' vuoto (es. Render effimero dopo un restart) inserisce

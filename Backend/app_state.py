@@ -15,6 +15,7 @@ google_search = None
 historical_db = None
 price_monitor = None
 price_scheduler = None
+url_monitor = None
 
 # Configurazione globale del browser (condivisa tra i router)
 browser_config = {
