@@ -1,9 +1,9 @@
 // Configurazione principale dell'applicazione
 
-// API base: in locale (localhost/127.0.0.1) usa la stessa origine del server
-// che serve il frontend; in produzione usa il deploy Render.
-const _isLocal = ['localhost', '127.0.0.1', ''].includes(window.location.hostname);
-const API_BASE_URL = _isLocal ? window.location.origin : 'https://jusper.onrender.com';
+// Il frontend è servito dallo STESSO servizio FastAPI del backend, quindi l'API
+// è sempre sulla stessa origine. Nessun URL hardcoded -> robusto a qualsiasi
+// nome/rename del deploy (mr-anto-scraper, jusper, dominio custom, localhost...).
+const API_BASE_URL = window.location.origin;
 
 const CONFIG = {
     // API Configuration

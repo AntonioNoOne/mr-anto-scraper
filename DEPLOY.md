@@ -1,6 +1,6 @@
 # Deploy — MR Anto Scraper
 
-Deploy ufficiale: **Render** (Docker). Live: `https://jusper.onrender.com`
+Deploy ufficiale: **Render** (Docker). Live: `https://mr-anto-scraper.onrender.com`
 
 ## Prerequisiti
 - Account Render (free)
@@ -24,9 +24,9 @@ Build e start sono definiti da `render.yaml` + `Dockerfile` — non serve config
 Locale: copia le stesse in `Backend/env.local` (già in `.gitignore`, non committare).
 
 ## Test post-deploy
-- Frontend: `https://jusper.onrender.com/`
-- Health: `https://jusper.onrender.com/health`
-- API docs: `https://jusper.onrender.com/docs`
+- Frontend: `https://mr-anto-scraper.onrender.com/`
+- Health: `https://mr-anto-scraper.onrender.com/health`
+- API docs: `https://mr-anto-scraper.onrender.com/docs`
 
 ## Free tier — limiti e note
 - **Sleep dopo ~15 min** di inattività → primo accesso richiede ~30-50s (cold start).
