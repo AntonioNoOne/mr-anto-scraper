@@ -118,6 +118,12 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
                     else:
                         logger.info(f"⚠️ Gruppo scartato: solo {len(group_products)} prodotto/i")
 
+                # GUARD deterministico: l'AI a volte mette insieme brand diversi
+                # (es. Apple MacBook + ASUS Vivobook). Filtra ogni cluster al
+                # brand dominante e scarta chi non combacia. Generalista: usa
+                # solo uguaglianza di brand, nessun elenco hardcoded.
+                clusters = self._enforce_brand_consistency(clusters)
+
                 logger.info(f"✅ DEBUG - Cluster finali creati: {len(clusters)}")
                 return clusters
 
@@ -189,6 +195,43 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
             logger.error(f"❌ Errore processamento JSON estratto: {e}")
             return []
 
+    def _brand_key(self, product: Dict[str, Any]) -> str:
+        """Chiave brand per un prodotto: brand normalizzato, altrimenti prima
+        parola del nome. Minuscolo e senza spazi. Generalista, nessun elenco."""
+        brand = (product.get('normalized_brand') or product.get('original_brand') or '').strip().lower()
+        if not brand:
+            name = (product.get('normalized_name') or product.get('original_name') or '').strip().lower()
+            brand = name.split()[0] if name else ''
+        return brand
+
+    def _enforce_brand_consistency(self, clusters: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Garantisce che ogni cluster contenga un solo brand.
+
+        L'AI a volte raggruppa prodotti di brand diversi. Per ogni cluster si
+        determina il brand dominante e si tengono solo i prodotti di quel brand;
+        i cluster che scendono sotto 2 prodotti vengono scartati.
+        """
+        cleaned = []
+        for cluster in clusters:
+            products = cluster.get('products', [])
+            if not products:
+                continue
+            from collections import Counter
+            counts = Counter(self._brand_key(p) for p in products)
+            # brand dominante (ignora chiavi vuote se esistono alternative)
+            non_empty = {b: c for b, c in counts.items() if b}
+            dominant = max(non_empty, key=non_empty.get) if non_empty else ''
+            kept = [p for p in products if self._brand_key(p) == dominant]
+            dropped = len(products) - len(kept)
+            if dropped:
+                logger.info(f"🛡️ Brand guard: cluster brand='{dominant}', rimossi {dropped} prodotti di altri brand")
+            if len(kept) > 1:
+                cluster = {**cluster, 'products': kept}
+                cleaned.append(cluster)
+            else:
+                logger.info(f"⚠️ Cluster scartato dopo brand guard: resta {len(kept)} prodotto")
+        return cleaned
+
     async def _analyze_products_in_groups(self, products: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Analisi AI per gruppi quando ci sono troppi prodotti"""
         try:
@@ -211,6 +254,10 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
 
             # Unisci cluster simili tra gruppi diversi
             merged_clusters = self._merge_similar_clusters(all_clusters)
+
+            # Il merge usa similarità di nome e può re-unire brand diversi:
+            # riapplica il guard sul brand.
+            merged_clusters = self._enforce_brand_consistency(merged_clusters)
 
             return merged_clusters
 
