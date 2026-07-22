@@ -274,7 +274,7 @@
                                                 class="px-3 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg text-white">
                                             <i class="fas fa-eraser"></i>
                                         </button>
-                                        <button v-if="scrapingUrls.length > 1" @click="removeUrl(index)" 
+                                        <button v-if="store.state.genericUrls.length > 1" @click="removeUrl(index)"
                                                 class="px-3 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white">
                                             <i class="fas fa-trash"></i>
                                         </button>
