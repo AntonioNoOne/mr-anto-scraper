@@ -59,6 +59,11 @@ class _ValidationMixin:
                     logger.info(f"🔍 DEBUG: Risultato {i+1} scartato - dominio non pertinente: {url}")
                     continue
 
+                # Filtro articoli/recensioni (non pagine di vendita)
+                if self._looks_like_article(result):
+                    logger.info(f"🔍 DEBUG: Risultato {i+1} scartato - sembra articolo, non vendita")
+                    continue
+
                 # Calcola score di validazione
                 score = self._calculate_validation_score(result, original_product)
                 logger.info(f"🔍 DEBUG: Risultato {i+1} - Score: {score}")
@@ -106,12 +111,44 @@ class _ValidationMixin:
         "kaufland", "allegro.pl", "emag.", "bol.com", "fnac.com", "fnac.es",
         "mediamarkt", "idealo.de", "idealo.co", "amazon.de", "amazon.es",
         "amazon.fr", "amazon.co.uk", "ebay.com", "newegg", "rakuten",
+        # testate giornalistiche / blog / magazine (non vendono, parlano)
+        "corriere.it", "repubblica.it", "gazzetta.it", "ilsole24ore", "ansa.it",
+        "wired.it", "wired.com", "ilfattoquotidiano", "fanpage.it", "today.it",
+        "ilmessaggero", "lastampa.it", "ilgiornale", "dday.it", "hwupgrade",
+        "tomshw", "quotidiano", "ilrestodelcarlino", "tgcom24", "blogspot",
+        "wordpress.com", "substack", "bicitv", "mtb-mag", "bicilive", "cyclinginquiry",
+    )
+
+    # Parole che indicano un ARTICOLO/recensione/guida (non una pagina di vendita)
+    _ARTICLE_HINTS = (
+        "recensione", "recensioni", "review", "prova su strada", "opinioni",
+        "guida all'acquisto", "come scegliere", "migliori", "classifica",
+        "notizia", "articolo", "intervista", "vs ", "differenze", "vale la pena",
+    )
+    # Segnali che indicano una pagina di VENDITA
+    _SHOP_HINTS = (
+        "€", "eur", "prezzo", "acquista", "acquistare", "comprare", "compra",
+        "offerta", "offerte", "sconto", "spedizione", "carrello", "disponibil",
+        "aggiungi al", "in stock", "iva inclusa", "ricondizionato",
     )
 
     def _is_junk_domain(self, url: str) -> bool:
-        """True se il dominio non è un venditore pertinente (social/forum/estero)."""
+        """True se il dominio non è un venditore pertinente (social/forum/estero/news)."""
         u = (url or "").lower()
         return any(j in u for j in self._JUNK_DOMAINS)
+
+    def _looks_like_article(self, result: Dict[str, Any]) -> bool:
+        """True se il risultato sembra un articolo/recensione e NON una vendita.
+
+        Scarta solo se ha marcatori da articolo E nessun segnale di shopping
+        (prezzo/acquista/offerta...). Cosi' non taglia le vere pagine prodotto.
+        """
+        text = f"{result.get('name','')} {result.get('description','')}".lower()
+        if result.get("price"):
+            return False
+        has_article = any(h in text for h in self._ARTICLE_HINTS)
+        has_shop = any(h in text for h in self._SHOP_HINTS)
+        return has_article and not has_shop
 
     def _calculate_validation_score(self, result: Dict[str, Any], original_product: Dict[str, Any]) -> float:
         """Calcola score di validazione per un risultato - SOLO VICINANZA AL TESTO"""

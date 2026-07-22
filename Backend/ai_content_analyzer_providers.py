@@ -223,7 +223,11 @@ class _ProvidersMixin:
                     "responseMimeType": "application/json",
 
                     # Alzato per evitare troncamenti su pagine con molti prodotti
-                    "maxOutputTokens": 16384
+                    "maxOutputTokens": 16384,
+
+                    # Disabilita il "thinking" di gemini-2.5-flash: per l'estrazione
+                    # JSON non serve e taglia molta latenza.
+                    "thinkingConfig": {"thinkingBudget": 0}
 
                 }
 

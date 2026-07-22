@@ -110,7 +110,8 @@ async def fast_extract(request: ExtractRequest):
                 total_found=result['total_found'],
                 containers_found=result.get('containers_found', 0),
                 container_selector=result.get('container_selector', 'N/A'),
-                url=request.url
+                url=request.url,
+                extraction_method=result.get('extraction_method')
             )
         else:
             print(f"❌ Errore: {result.get('error')}")
