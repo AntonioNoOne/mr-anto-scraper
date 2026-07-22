@@ -16,6 +16,8 @@ jobs:
       - name: Ping health endpoint
         run: |
           echo "Ping $(date -u)"
-          code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" https://mr-anto-scraper.onrender.com/health)
+          code=$(curl -s -m 60 -o /dev/null -w "%{http_code}" https://mr-anto-scraper.onrender.com/health || echo 000)
           echo "HTTP $code"
-          test "$code" = "200"
+          # Best-effort: pinga per evitare lo spindown, NON fallisce il job se il
+          # servizio non risponde 200 (es. subdominio bloccato / deploy in corso).
+          if [ "$code" != "200" ]; then echo "::warning::ping non-200 ($code) - keep-alive best-effort"; fi
