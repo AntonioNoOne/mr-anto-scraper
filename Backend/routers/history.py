@@ -227,6 +227,22 @@ async def search_alternative_vendors(request: dict):
         if result['success']:
             print(f"✅ Ricerca completata: {len(result.get('alternative_vendors', []))} venditori trovati")
 
+            # Salva nel DB storico i venditori CON prezzo (come fa fast-extract),
+            # cosi' i risultati della ricerca sono confrontabili/monitorabili.
+            try:
+                vendors = result.get('alternative_vendors') or result.get('extracted_products') or []
+                to_save = [v for v in vendors if v.get('price')]
+                if to_save:
+                    save_res = await app_state.historical_db.save_extracted_products(
+                        url=f"google-search:{product_data.get('name','')}",
+                        products=to_save,
+                        session_id=None,
+                        extraction_method="google_search",
+                    )
+                    print(f"💾 Google Search: salvati {save_res.get('saved_count', 0)} venditori nel DB")
+            except Exception as e:
+                print(f"⚠️ Errore salvataggio ricerca nel DB: {e}")
+
             return {
                 "success": True,
                 "original_product": result['original_product'],
