@@ -88,28 +88,18 @@ RISPOSTA OBBLIGATORIA (SOLO JSON):
 
 RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con array vuoto."""
 
-            # Chiamata AI con prompt migliorato per JSON
-            result = await self.chat_manager.send_message(
-                message=analysis_prompt,
-                model="openai",  # Usa OpenAI per analisi semantica
-                conversation_history=[]
-            )
-
-            if not result['success']:
-                logger.warning(f"⚠️ Errore analisi AI: {result.get('error')}")
+            # Chiamata AI in JSON mode (Gemini). NB: prima usava chat_manager con
+            # model="openai" -> con chiave OpenAI assente/placeholder dava 401 e il
+            # confronto restituiva 0 match; inoltre la risposta non era JSON puro.
+            # call_json usa Gemini in JSON mode e ritorna gia' il dict parsato.
+            ai_response = await self.ai_analyzer.call_json(analysis_prompt, max_tokens=4096)
+            if not ai_response:
+                logger.warning("⚠️ Analisi AI confronto: nessun JSON valido")
                 return []
-
-            # DEBUG: Mostra la risposta completa dell'AI
-            logger.info(f"🤖 DEBUG - RISPOSTA COMPLETA AI:")
-            logger.info(f"  Success: {result.get('success')}")
-            logger.info(f"  Model used: {result.get('model_used')}")
-            logger.info(f"  Response length: {len(result.get('response', ''))}")
-            logger.info(f"  Response preview: {result.get('response', '')[:500]}...")
 
             # Parsing risultato AI
             try:
-                ai_response = json.loads(result['response'])
-                logger.info(f"✅ DEBUG - JSON AI parsato correttamente")
+                logger.info(f"✅ DEBUG - JSON AI ricevuto")
                 logger.info(f"  Numero gruppi ricevuti: {len(ai_response.get('groups', []))}")
 
                 clusters = []
@@ -131,19 +121,13 @@ RICORDA: SOLO JSON, NIENTE ALTRO. Se non puoi analizzare, restituisci JSON con a
                 logger.info(f"✅ DEBUG - Cluster finali creati: {len(clusters)}")
                 return clusters
 
-            except json.JSONDecodeError as e:
-                logger.warning(f"⚠️ Errore parsing JSON AI: {e}")
-                logger.warning(f"⚠️ DEBUG - Risposta AI che ha causato errore: {result.get('response', '')}")
-
-                # 🆕 FALLBACK INTELLIGENTE: Prova a estrarre JSON dalla risposta
-                logger.info("🔄 Tentativo estrazione JSON dalla risposta AI...")
-                extracted_json = self._extract_json_from_response(result.get('response', ''))
-
-                if extracted_json:
-                    logger.info("✅ JSON estratto con successo dal fallback")
-                    return self._process_extracted_json(extracted_json, products)
-                else:
-                    logger.warning("❌ Impossibile estrarre JSON, ritorno array vuoto")
+            except Exception as e:
+                logger.warning(f"⚠️ Errore elaborazione gruppi AI: {e}")
+                # ai_response e' gia' JSON parsato (call_json); se la struttura non
+                # e' quella attesa, prova comunque il processore tollerante.
+                try:
+                    return self._process_extracted_json(ai_response, products)
+                except Exception:
                     return []
 
         except Exception as e:
