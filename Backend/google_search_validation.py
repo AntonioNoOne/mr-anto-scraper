@@ -117,13 +117,22 @@ class _ValidationMixin:
         "ilmessaggero", "lastampa.it", "ilgiornale", "dday.it", "hwupgrade",
         "tomshw", "quotidiano", "ilrestodelcarlino", "tgcom24", "blogspot",
         "wordpress.com", "substack", "bicitv", "mtb-mag", "bicilive", "cyclinginquiry",
+        # news locali / turismo / viaggi / noleggio / moda (non vendita prodotto)
+        "quicomo", "primocanale", "varesenews", "ilgiorno", "espansionetv",
+        "lifeintravel", "donnamoderna", "turismoroma", "turismo", "viaggi",
+        "bikerental", "noleggio", "rental", "luisaviaroma", "tripadvisor",
     )
 
-    # Parole che indicano un ARTICOLO/recensione/guida (non una pagina di vendita)
+    # Parole che indicano un ARTICOLO/cronaca/guida/viaggio (non una vendita)
     _ARTICLE_HINTS = (
         "recensione", "recensioni", "review", "prova su strada", "opinioni",
         "guida all'acquisto", "come scegliere", "migliori", "classifica",
         "notizia", "articolo", "intervista", "vs ", "differenze", "vale la pena",
+        # cronaca / incidenti
+        "incidente", "investit", "cronaca", "ferit", "arrestat", "rubat",
+        # viaggi / turismo / itinerari (non vendono la bici, la usano)
+        "itinerari", "percorso", "percorsi", "viaggio in bici", "pedalando",
+        "francigena", "scoprire", "chilometri", " km ", "tappa", "noleggi",
     )
     # Segnali che indicano una pagina di VENDITA
     _SHOP_HINTS = (
