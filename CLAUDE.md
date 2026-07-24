@@ -51,7 +51,7 @@ Config globale (una volta, vale per tutti i progetti) — editare
   "mcpServers": {
     "serena": {
       "command": "C:/Users/anto_/.local/bin/uvx.exe",
-      "args": ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "ide-assistant"]
+      "args": ["--from", "git+https://github.com/oraios/serena", "serena", "start-mcp-server", "--context", "claude-code"]
     }
   }
 }
